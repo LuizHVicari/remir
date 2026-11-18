@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand palette lives in designsystem/Color.kt. These XML values exist only for what renders
+         before Compose starts (window background) and for the launcher icon. Keep them in sync. -->
+    <color name="window_background">#FCF9F3</color>
+    <color name="ic_launcher_background">#1B1C18</color>
+    <color name="ic_launcher_foreground">#C5F331</color>
+</resources>

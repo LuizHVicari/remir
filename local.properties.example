@@ -1,0 +1,9 @@
+# Template for local.properties (git-ignored). Android Studio creates the real file with `sdk.dir`; add the lines below.
+# Used by DEBUG builds only. Release builds read Gradle properties / env vars instead (see README).
+
+# Clerk Dashboard > API keys > Publishable key
+clerk.publishableKey=pk_test_xxxxxxxxxxxxxxxx
+
+# Optional. Default: http://10.0.2.2:8080/ (the host's localhost seen from the emulator).
+# On a physical device: `adb reverse tcp:8080 tcp:8080`, then:
+# api.url=http://localhost:8080/

@@ -1,0 +1,21 @@
+# Gradle / Kotlin
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+
+# Android Studio / IntelliJ (shared run configurations live in .run/)
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Secrets and machine-local config (NEVER commit)
+local.properties
+.env
+*.jks
+*.keystore
+
+# OS
+.DS_Store

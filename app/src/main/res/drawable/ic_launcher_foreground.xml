@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder: a lime "R" on the brand's near-black. Replace with the real icon (Image Asset Studio). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@color/ic_launcher_foreground"
+        android:pathData="M40,32h18c8.3,0 14,5.2 14,12.6c0,5.6 -3.3,9.9 -8.4,11.6L74,76h-9.4l-9.6,-18.6H48V76h-8V32zM48,39.2v11.2h9.6c4,0 6.4,-2.2 6.4,-5.6s-2.4,-5.6 -6.4,-5.6H48z" />
+</vector>

@@ -1,0 +1,22 @@
+# Local Postgres for development. All values come from `.env` (copy .env.example).
+services:
+  postgres:
+    # Keep in sync with `postgres` in gradle/libs.versions.toml (tests and generateMigrations).
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:?missing in .env (cp .env.example .env)}
+      POSTGRES_USER: ${DATABASE_USER:?missing in .env (cp .env.example .env)}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?missing in .env (cp .env.example .env)}
+    ports:
+      - "${DATABASE_PORT:?missing in .env (cp .env.example .env)}:5432"
+    volumes:
+      # Postgres 18+ mounts the volume at /var/lib/postgresql (not .../data).
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

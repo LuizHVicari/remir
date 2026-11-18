@@ -1,0 +1,110 @@
+[versions]
+# Build
+agp = "9.5.1"
+kotlin = "2.4.21"
+foojay = "1.0.0"
+jvm = "21"
+
+# Android SDK
+android-compileSdk = "37"
+android-targetSdk = "37"
+android-minSdk = "26"
+
+# Kotlin / shared
+kotlinx-serialization = "1.13.0"
+kotlinx-coroutines = "1.11.0"
+kotlinx-datetime = "0.8.0"
+ktor = "3.6.1"
+konform = "0.11.1"
+
+# Server
+exposed = "1.6.1"
+flyway = "13.12.2"
+hikari = "7.1.0"
+postgresql = "42.7.14"
+logback = "1.6.7"
+testcontainers = "2.0.5"
+# Postgres Docker image tag used by tests and by `generateMigrations` (keep docker-compose.yml in sync).
+postgres = "18-alpine"
+junit = "6.1.3"
+
+# App
+compose-bom = "2026.09.00"
+activity-compose = "1.13.0"
+core-ktx = "1.19.1"
+lifecycle = "2.11.0"
+navigation = "2.10.2"
+koin-bom = "4.2.2"
+clerk = "1.4.1"
+
+[libraries]
+# Gradle plugins (used by build-logic)
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-serializationGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
+kotlin-composeGradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+exposed-gradlePlugin = { module = "org.jetbrains.exposed.plugin:exposed-gradle-plugin", version.ref = "exposed" }
+
+# Shared
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+konform = { module = "io.konform:konform", version.ref = "konform" }
+
+# Ktor (common + server + client)
+ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktor" }
+ktor-resources = { module = "io.ktor:ktor-resources" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation" }
+ktor-server-resources = { module = "io.ktor:ktor-server-resources" }
+ktor-server-auth = { module = "io.ktor:ktor-server-auth" }
+ktor-server-auth-jwt = { module = "io.ktor:ktor-server-auth-jwt" }
+ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages" }
+ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host" }
+ktor-client-core = { module = "io.ktor:ktor-client-core" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation" }
+ktor-client-resources = { module = "io.ktor:ktor-client-resources" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging" }
+
+# Server
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
+exposed-migration-jdbc = { module = "org.jetbrains.exposed:exposed-migration-jdbc", version.ref = "exposed" }
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+hikari = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+# App
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core-ktx" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
+koin-android = { module = "io.insert-koin:koin-android" }
+koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose" }
+clerk-api = { module = "com.clerk:clerk-android-api", version.ref = "clerk" }
+clerk-ui = { module = "com.clerk:clerk-android-ui", version.ref = "clerk" }
+
+[plugins]
+foojay = { id = "org.gradle.toolchains.foojay-resolver-convention", version.ref = "foojay" }
+# Convention plugins (build-logic). No version: they come from the included build.
+remir-kotlin-jvm-library = { id = "remir.kotlin-jvm-library" }
+remir-ktor-server = { id = "remir.ktor-server" }
+remir-android-app = { id = "remir.android-app" }
