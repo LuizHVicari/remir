@@ -12,23 +12,21 @@ class ApiException(
     val error: ApiError,
 ) : Exception(error.message)
 
-/** Runs an API call and returns a [Result], without swallowing coroutine cancellation. */
+/**
+ * Runs an API call and returns a [Result]. Coroutine cancellation and JVM errors (`Error`, e.g. out of memory)
+ * are rethrown, not wrapped: only `Exception`s become a failed [Result].
+ */
 suspend fun <T> apiCall(block: suspend () -> T): Result<T> =
-    try {
-        Result.success(block())
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Result.failure(e)
-    }
+    runCatching { block() }.onFailure { if (it is CancellationException || it !is Exception) throw it }
 
 /** Message ready to show on screen. The screen resolves it with `UiText.asString()`. */
 val Throwable.userMessage: UiText
-    get() = when (this) {
-        is ApiException -> UiText.Dynamic(error.message)
-        is IOException -> UiText.Resource(R.string.error_network)
-        else -> message?.let(UiText::Dynamic) ?: UiText.Resource(R.string.error_unexpected)
-    }
+    get() =
+        when (this) {
+            is ApiException -> UiText.Dynamic(error.message)
+            is IOException -> UiText.Resource(R.string.error_network)
+            else -> message?.let(UiText::Dynamic) ?: UiText.Resource(R.string.error_unexpected)
+        }
 
 /** `ApiError.fields` when the error came from server-side validation; empty otherwise. */
 val Throwable.fieldErrors: Map<String, String>

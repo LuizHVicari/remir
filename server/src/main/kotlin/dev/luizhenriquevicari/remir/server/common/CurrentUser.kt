@@ -17,7 +17,11 @@ fun ApplicationCall.userId(): String =
 
 /** True when the token's `metadata.role` is `admin`. Only works inside `authenticate(CLERK_AUTH) { }`. */
 fun ApplicationCall.isAdmin(): Boolean =
-    principal<JWTPrincipal>()?.payload?.getClaim(METADATA_CLAIM)?.asMap()?.get("role") == ADMIN_ROLE
+    principal<JWTPrincipal>()
+        ?.payload
+        ?.getClaim(METADATA_CLAIM)
+        ?.asMap()
+        ?.get("role") == ADMIN_ROLE
 
 /** Throws [Forbidden] unless the caller is an admin. */
 fun ApplicationCall.requireAdmin() {

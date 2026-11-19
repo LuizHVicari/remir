@@ -17,12 +17,13 @@ import io.ktor.server.response.respond
 fun Application.configureStatusPages() {
     install(StatusPages) {
         exception<DomainException> { call, e ->
-            val status = when (e) {
-                is ValidationFailed -> HttpStatusCode.BadRequest
-                is NotFound -> HttpStatusCode.NotFound
-                is Conflict -> HttpStatusCode.Conflict
-                is Forbidden -> HttpStatusCode.Forbidden
-            }
+            val status =
+                when (e) {
+                    is ValidationFailed -> HttpStatusCode.BadRequest
+                    is NotFound -> HttpStatusCode.NotFound
+                    is Conflict -> HttpStatusCode.Conflict
+                    is Forbidden -> HttpStatusCode.Forbidden
+                }
             val fields = (e as? ValidationFailed)?.fields.orEmpty()
             call.respond(status, ApiError(e.code, e.message.orEmpty(), fields))
         }
@@ -31,7 +32,8 @@ fun Application.configureStatusPages() {
             call.respond(HttpStatusCode.BadRequest, ApiError("bad_request", "Malformed request"))
         }
         exception<Throwable> { call, e ->
-            call.application.environment.log.error("Unhandled error", e)
+            call.application.environment.log
+                .error("Unhandled error", e)
             call.respond(HttpStatusCode.InternalServerError, ApiError("internal_error", "Internal error"))
         }
         status(HttpStatusCode.NotFound) { call, status ->

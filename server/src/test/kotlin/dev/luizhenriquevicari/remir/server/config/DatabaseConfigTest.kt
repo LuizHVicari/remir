@@ -13,6 +13,9 @@ class DatabaseConfigTest {
 
     @Test
     fun `jdbc url carries the sslmode when configured`() {
-        assertEquals("jdbc:postgresql://db.example.com:5432/remir?sslmode=require", base.copy(sslMode = "require").jdbcUrl)
+        assertEquals(
+            "jdbc:postgresql://db.example.com:5432/remir?sslmode=require",
+            base.copy(sslMode = "require").jdbcUrl,
+        )
     }
 }

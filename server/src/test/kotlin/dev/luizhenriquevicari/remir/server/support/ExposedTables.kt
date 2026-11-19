@@ -9,7 +9,8 @@ object ExposedTables {
 
     fun all(): List<Table> {
         val loader = Thread.currentThread().contextClassLoader
-        return loader.getResources(TABLES_PACKAGE.replace('.', '/'))
+        return loader
+            .getResources(TABLES_PACKAGE.replace('.', '/'))
             .toList()
             .filter { it.protocol == "file" }
             .flatMap { classNamesUnder(File(it.toURI())) }
@@ -17,12 +18,22 @@ object ExposedTables {
     }
 
     private fun classNamesUnder(root: File): List<String> =
-        root.walkTopDown()
+        root
+            .walkTopDown()
             .filter { it.isFile && it.extension == "class" }
-            .map { "$TABLES_PACKAGE." + it.relativeTo(root).path.removeSuffix(".class").replace(File.separatorChar, '.') }
-            .toList()
+            .map {
+                "$TABLES_PACKAGE." +
+                    it
+                        .relativeTo(root)
+                        .path
+                        .removeSuffix(".class")
+                        .replace(File.separatorChar, '.')
+            }.toList()
 
     /** Kotlin `object`s expose their instance in the static `INSTANCE` field. */
-    private fun tableObjectOrNull(className: String, loader: ClassLoader): Table? =
+    private fun tableObjectOrNull(
+        className: String,
+        loader: ClassLoader,
+    ): Table? =
         runCatching { Class.forName(className, true, loader).getField("INSTANCE").get(null) }.getOrNull() as? Table
 }

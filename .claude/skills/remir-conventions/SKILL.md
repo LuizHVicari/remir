@@ -35,10 +35,10 @@ Path abbreviations:
 
 1. **core**
    - `C/<feature>/<Feature>Dto.kt`: responses.
-   - `C/<feature>/<Feature>Requests.kt`: request bodies.
-   - `C/<feature>/<Feature>Resources.kt`: `@Resource` routes.
+   - `C/<feature>/<Request>.kt`: request bodies. A file that holds a single class is named after it (`UpdateProfileRequest.kt`); several related requests may share `<Feature>Requests.kt`.
+   - `C/<feature>/<Resource>.kt`: `@Resource` routes, same naming rule (`MeResource.kt`); several resources may share `<Feature>Resources.kt`.
    - `C/<feature>/<Feature>Validation.kt`: `object <Feature>Validation { val create = Validation<...> { } }`. Use the shared constraints in `C/validation/Constraints.kt`, and add new shared ones there.
-2. **table**: `S/features/<feature>/<Feature>Table.kt` holds `object XTable : Table("snake_case_plural")`. Every user-owned table has `val userId = varchar("user_id", 64).references(UsersTable.id).index()`.
+2. **table**: `S/features/<feature>/XTable.kt` holds `object XTable : Table("snake_case_plural")` (the file is named after the table object). Every user-owned table has `val userId = varchar("user_id", 64).references(UsersTable.id).index()`.
 3. **migration**: run `./gradlew :server:generateMigrations`, which writes `server/src/main/resources/db/migration/V<timestamp>__<description>.sql`. Review the generated SQL, then commit it. Never hand-write the DDL.
 4. **server**
    - `S/features/<feature>/<Feature>Repository.kt`: Exposed DSL only; returns `core` DTOs.
@@ -99,6 +99,8 @@ Code examples for every layer: [examples.md](examples.md).
 **`applicationId = "dev.luizhenriquevicari.remir"`** never changes.
 
 **No nested `if`s.** The only allowed exception is an error check. Flatten with early returns, `when`, or a helper.
+
+**Lint is ktlint (formatting, `.editorconfig`, 120 columns) and detekt (`config/detekt/detekt.yml`).** Run `./gradlew ktlintFormat` to fix formatting and `./gradlew ktlintCheck detekt` to check; PRs run both. Fix the code instead of changing a rule or adding a baseline. The only agreed exceptions are `@Composable` function names in PascalCase and `ReturnCount` with guard clauses.
 
 **No lint/type suppressions without asking Luiz first.** That covers `@Suppress`, `tools:ignore` and an `@OptIn` of an experimental API.
 

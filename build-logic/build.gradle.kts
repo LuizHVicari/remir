@@ -10,6 +10,8 @@ dependencies {
     implementation(libs.kotlin.serializationGradlePlugin)
     implementation(libs.kotlin.composeGradlePlugin)
     implementation(libs.exposed.gradlePlugin)
+    implementation(libs.ktlint.gradlePlugin)
+    implementation(libs.detekt.gradlePlugin)
 }
 
 gradlePlugin {

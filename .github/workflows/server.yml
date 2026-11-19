@@ -1,6 +1,6 @@
 name: server
 
-# Tests core and server on every push and pull request. A push to main that passes also builds the image,
+# Pull requests are validated by pr.yml. A push to main tests, then builds the image,
 # publishes it to Artifact Registry and updates the Cloud Run service. See "Deploy" in the README for the
 # one-time Google Cloud setup and the repository variables used below.
 on:
@@ -16,13 +16,6 @@ on:
       - gradle.properties
       - Dockerfile
       - .github/workflows/server.yml
-  pull_request:
-    paths:
-      - core/**
-      - server/**
-      - build-logic/**
-      - gradle/**
-      - Dockerfile
 
 permissions:
   contents: read

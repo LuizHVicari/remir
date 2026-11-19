@@ -15,5 +15,6 @@ class KotlinJvmLibraryConventionPlugin : Plugin<Project> {
             jvmToolchain(jvmVersion)
         }
         configureJUnit()
+        configureLint()
     }
 }

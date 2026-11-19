@@ -39,16 +39,21 @@ class LegalRoutesTest {
         content: String,
         requiresAcceptance: Boolean,
         token: String = adminToken(),
-    ): HttpResponse = post("/admin/legal-documents/$type") {
-        bearerAuth(token)
-        contentType(ContentType.Application.Json)
-        setBody(PublishLegalDocumentRequest(content, requiresAcceptance))
-    }
+    ): HttpResponse =
+        post("/admin/legal-documents/$type") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(PublishLegalDocumentRequest(content, requiresAcceptance))
+        }
 
     private suspend fun HttpClient.pending(token: String): List<LegalDocumentDto> =
         get("/me/legal") { bearerAuth(token) }.body<LegalStatusDto>().pending
 
-    private suspend fun HttpClient.accept(type: String, version: Int, token: String): HttpResponse =
+    private suspend fun HttpClient.accept(
+        type: String,
+        version: Int,
+        token: String,
+    ): HttpResponse =
         post("/legal-documents/$type/acceptances") {
             bearerAuth(token)
             contentType(ContentType.Application.Json)
@@ -56,107 +61,117 @@ class LegalRoutesTest {
         }
 
     @Test
-    fun `publishing without a token answers 401`() = remirTestApplication { client ->
-        val response = client.post("/admin/legal-documents/terms") {
-            contentType(ContentType.Application.Json)
-            setBody(PublishLegalDocumentRequest("# Terms", requiresAcceptance = true))
+    fun `publishing without a token answers 401`() =
+        remirTestApplication { client ->
+            val response =
+                client.post("/admin/legal-documents/terms") {
+                    contentType(ContentType.Application.Json)
+                    setBody(PublishLegalDocumentRequest("# Terms", requiresAcceptance = true))
+                }
+
+            assertEquals(HttpStatusCode.Unauthorized, response.status)
         }
 
-        assertEquals(HttpStatusCode.Unauthorized, response.status)
-    }
+    @Test
+    fun `publishing as a regular user answers 403`() =
+        remirTestApplication { client ->
+            val response = client.publish("terms", "# Terms", true, token = TestJwt.token(newUserId()))
+
+            assertEquals(HttpStatusCode.Forbidden, response.status)
+            assertEquals("forbidden", response.body<ApiError>().code)
+        }
 
     @Test
-    fun `publishing as a regular user answers 403`() = remirTestApplication { client ->
-        val response = client.publish("terms", "# Terms", true, token = TestJwt.token(newUserId()))
+    fun `admin publishes versions that increase and become the current one`() =
+        remirTestApplication { client ->
+            val first = client.publish("terms", "# Terms v-a", true)
+            val second = client.publish("terms", "# Terms v-b", false)
 
-        assertEquals(HttpStatusCode.Forbidden, response.status)
-        assertEquals("forbidden", response.body<ApiError>().code)
-    }
-
-    @Test
-    fun `admin publishes versions that increase and become the current one`() = remirTestApplication { client ->
-        val first = client.publish("terms", "# Terms v-a", true)
-        val second = client.publish("terms", "# Terms v-b", false)
-
-        assertEquals(HttpStatusCode.Created, first.status)
-        val firstDoc = first.body<LegalDocumentDto>()
-        val secondDoc = second.body<LegalDocumentDto>()
-        assertEquals(firstDoc.version + 1, secondDoc.version)
-        val current = client.get("/legal-documents/terms") { bearerAuth(adminToken()) }.body<LegalDocumentDto>()
-        assertEquals(secondDoc, current)
-    }
+            assertEquals(HttpStatusCode.Created, first.status)
+            val firstDoc = first.body<LegalDocumentDto>()
+            val secondDoc = second.body<LegalDocumentDto>()
+            assertEquals(firstDoc.version + 1, secondDoc.version)
+            val current = client.get("/legal-documents/terms") { bearerAuth(adminToken()) }.body<LegalDocumentDto>()
+            assertEquals(secondDoc, current)
+        }
 
     @Test
-    fun `publishing blank content answers 400 with fields`() = remirTestApplication { client ->
-        val response = client.publish("terms", "   ", true)
+    fun `publishing blank content answers 400 with fields`() =
+        remirTestApplication { client ->
+            val response = client.publish("terms", "   ", true)
 
-        assertEquals(HttpStatusCode.BadRequest, response.status)
-        assertTrue("content" in response.body<ApiError>().fields)
-    }
-
-    @Test
-    fun `public page renders the current version without a token and never raw HTML`() = remirTestApplication { client ->
-        client.publish("privacy", "# Privacy Page Test\n\nHello <script>alert(1)</script>", true)
-
-        val response = client.get("/legal/privacy")
-
-        assertEquals(HttpStatusCode.OK, response.status)
-        assertEquals(ContentType.Text.Html, response.contentType()?.withoutParameters())
-        val html = response.bodyAsText()
-        assertTrue("<h1>Privacy Page Test</h1>" in html, html)
-        assertFalse("<script>alert" in html, html)
-    }
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertTrue("content" in response.body<ApiError>().fields)
+        }
 
     @Test
-    fun `acceptance flow asks once, again only when a new version requires it`() = remirTestApplication { client ->
-        val token = TestJwt.token(newUserId())
-        val v1 = client.publish("terms", "# Flow v1", true).body<LegalDocumentDto>()
+    fun `public page renders the current version without a token and never raw HTML`() =
+        remirTestApplication { client ->
+            client.publish("privacy", "# Privacy Page Test\n\nHello <script>alert(1)</script>", true)
 
-        assertTrue(client.pending(token).any { it.type == LegalDocumentType.Terms && it.version == v1.version })
+            val response = client.get("/legal/privacy")
 
-        assertEquals(HttpStatusCode.NoContent, client.accept("terms", v1.version, token).status)
-        assertTrue(client.pending(token).none { it.type == LegalDocumentType.Terms })
-
-        // A typo fix does not ask again.
-        client.publish("terms", "# Flow v1 fixed", false)
-        assertTrue(client.pending(token).none { it.type == LegalDocumentType.Terms })
-
-        // A material change does.
-        val v3 = client.publish("terms", "# Flow v3", true).body<LegalDocumentDto>()
-        assertTrue(client.pending(token).any { it.type == LegalDocumentType.Terms && it.version == v3.version })
-    }
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals(ContentType.Text.Html, response.contentType()?.withoutParameters())
+            val html = response.bodyAsText()
+            assertTrue("<h1>Privacy Page Test</h1>" in html, html)
+            assertFalse("<script>alert" in html, html)
+        }
 
     @Test
-    fun `accepting a stale version answers 409`() = remirTestApplication { client ->
-        val token = TestJwt.token(newUserId())
-        val old = client.publish("terms", "# Stale old", true).body<LegalDocumentDto>()
-        client.publish("terms", "# Stale new", true)
+    fun `acceptance flow asks once, again only when a new version requires it`() =
+        remirTestApplication { client ->
+            val token = TestJwt.token(newUserId())
+            val v1 = client.publish("terms", "# Flow v1", true).body<LegalDocumentDto>()
 
-        val response = client.accept("terms", old.version, token)
+            assertTrue(client.pending(token).any { it.type == LegalDocumentType.Terms && it.version == v1.version })
 
-        assertEquals(HttpStatusCode.Conflict, response.status)
-        assertEquals("conflict", response.body<ApiError>().code)
-    }
+            assertEquals(HttpStatusCode.NoContent, client.accept("terms", v1.version, token).status)
+            assertTrue(client.pending(token).none { it.type == LegalDocumentType.Terms })
 
-    @Test
-    fun `one user accepting does not affect another user`() = remirTestApplication { client ->
-        val userA = TestJwt.token(newUserId())
-        val userB = TestJwt.token(newUserId())
-        val doc = client.publish("terms", "# Isolation", true).body<LegalDocumentDto>()
+            // A typo fix does not ask again.
+            client.publish("terms", "# Flow v1 fixed", false)
+            assertTrue(client.pending(token).none { it.type == LegalDocumentType.Terms })
 
-        client.accept("terms", doc.version, userA)
-
-        assertTrue(client.pending(userA).none { it.type == LegalDocumentType.Terms })
-        assertTrue(client.pending(userB).any { it.type == LegalDocumentType.Terms && it.version == doc.version })
-    }
+            // A material change does.
+            val v3 = client.publish("terms", "# Flow v3", true).body<LegalDocumentDto>()
+            assertTrue(client.pending(token).any { it.type == LegalDocumentType.Terms && it.version == v3.version })
+        }
 
     @Test
-    fun `accepting with an invalid version answers 400`() = remirTestApplication { client ->
-        client.publish("terms", "# Invalid", true)
+    fun `accepting a stale version answers 409`() =
+        remirTestApplication { client ->
+            val token = TestJwt.token(newUserId())
+            val old = client.publish("terms", "# Stale old", true).body<LegalDocumentDto>()
+            client.publish("terms", "# Stale new", true)
 
-        val response = client.accept("terms", 0, TestJwt.token(newUserId()))
+            val response = client.accept("terms", old.version, token)
 
-        assertEquals(HttpStatusCode.BadRequest, response.status)
-        assertTrue("version" in response.body<ApiError>().fields)
-    }
+            assertEquals(HttpStatusCode.Conflict, response.status)
+            assertEquals("conflict", response.body<ApiError>().code)
+        }
+
+    @Test
+    fun `one user accepting does not affect another user`() =
+        remirTestApplication { client ->
+            val userA = TestJwt.token(newUserId())
+            val userB = TestJwt.token(newUserId())
+            val doc = client.publish("terms", "# Isolation", true).body<LegalDocumentDto>()
+
+            client.accept("terms", doc.version, userA)
+
+            assertTrue(client.pending(userA).none { it.type == LegalDocumentType.Terms })
+            assertTrue(client.pending(userB).any { it.type == LegalDocumentType.Terms && it.version == doc.version })
+        }
+
+    @Test
+    fun `accepting with an invalid version answers 400`() =
+        remirTestApplication { client ->
+            client.publish("terms", "# Invalid", true)
+
+            val response = client.accept("terms", 0, TestJwt.token(newUserId()))
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertTrue("version" in response.body<ApiError>().fields)
+        }
 }

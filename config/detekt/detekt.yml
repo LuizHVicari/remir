@@ -1,0 +1,15 @@
+# detekt configuration, applied on top of detekt's defaults (buildUponDefaultConfig).
+# Do not disable a rule or add a baseline here without agreeing on it first: fix the code instead.
+config:
+  validation: true
+
+naming:
+  FunctionNaming:
+    # Compose functions that emit UI are PascalCase by convention.
+    ignoreAnnotated:
+      - Composable
+
+style:
+  ReturnCount:
+    # Early returns (guard clauses) are the preferred style in this project.
+    excludeGuardClauses: true

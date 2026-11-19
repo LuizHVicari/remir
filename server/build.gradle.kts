@@ -54,13 +54,15 @@ tasks.test {
 
 // Local dev: `./gradlew :server:run` loads the root `.env` (same file docker compose reads).
 // Real environment variables take precedence. The server itself only reads env vars.
-val dotEnv: Map<String, String> = rootProject.file(".env")
-    .takeIf { it.exists() }
-    ?.readLines()
-    .orEmpty()
-    .map { it.trim() }
-    .filter { it.isNotEmpty() && !it.startsWith("#") && "=" in it }
-    .associate { it.substringBefore("=").trim() to it.substringAfter("=").trim().removeSurrounding("\"") }
+val dotEnv: Map<String, String> =
+    rootProject
+        .file(".env")
+        .takeIf { it.exists() }
+        ?.readLines()
+        .orEmpty()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.startsWith("#") && "=" in it }
+        .associate { it.substringBefore("=").trim() to it.substringAfter("=").trim().removeSurrounding("\"") }
 
 tasks.named<JavaExec>("run") {
     dotEnv.filterKeys { System.getenv(it) == null }.forEach { (key, value) -> environment(key, value) }

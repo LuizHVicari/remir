@@ -17,6 +17,7 @@ class AndroidAppConventionPlugin : Plugin<Project> {
         pluginManager.apply("com.android.application")
         pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
         pluginManager.apply("org.jetbrains.kotlin.plugin.serialization")
+        configureLint()
 
         val javaVersion = JavaVersion.toVersion(jvmVersion)
         extensions.configure<ApplicationExtension> {

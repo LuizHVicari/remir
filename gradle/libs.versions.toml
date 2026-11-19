@@ -3,6 +3,9 @@
 agp = "9.5.1"
 kotlin = "2.4.21"
 foojay = "1.0.0"
+# Lint. detekt 1.x stops at Kotlin 2.0, so this uses the 2.x alpha built for Kotlin 2.4; revisit when 2.0 is stable.
+ktlint-gradle = "14.2.0"
+detekt = "2.0.0-alpha.6"
 jvm = "21"
 
 # Android SDK
@@ -45,6 +48,8 @@ kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", ve
 kotlin-serializationGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 kotlin-composeGradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 exposed-gradlePlugin = { module = "org.jetbrains.exposed.plugin:exposed-gradle-plugin", version.ref = "exposed" }
+ktlint-gradlePlugin = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint-gradle" }
+detekt-gradlePlugin = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 
 # Shared
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }

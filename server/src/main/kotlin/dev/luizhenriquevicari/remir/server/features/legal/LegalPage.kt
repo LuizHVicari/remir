@@ -31,10 +31,11 @@ pre { overflow-x: auto; padding: .75rem; border: 1px solid var(--border); }
 footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: .9rem; }
 """
 
-fun LegalDocumentType.displayName(): String = when (this) {
-    LegalDocumentType.Privacy -> "Privacy Policy"
-    LegalDocumentType.Terms -> "Terms of Service"
-}
+fun LegalDocumentType.displayName(): String =
+    when (this) {
+        LegalDocumentType.Privacy -> "Privacy Policy"
+        LegalDocumentType.Terms -> "Terms of Service"
+    }
 
 /** Public page of one document version: the Markdown content plus its version and effective date. */
 fun HTML.legalPage(document: LegalDocumentDto) {

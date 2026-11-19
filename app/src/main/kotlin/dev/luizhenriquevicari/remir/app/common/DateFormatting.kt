@@ -15,6 +15,7 @@ fun Instant.toLocalizedDate(
     zone: ZoneId = ZoneId.systemDefault(),
     locale: Locale = Locale.getDefault(),
 ): String =
-    DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+    DateTimeFormatter
+        .ofLocalizedDate(FormatStyle.MEDIUM)
         .withLocale(locale)
         .format(toJavaInstant().atZone(zone))

@@ -9,13 +9,18 @@ import androidx.compose.ui.res.stringResource
  * server) or a `strings.xml` resource. The screen turns it into a `String` with [asString].
  */
 sealed interface UiText {
-    data class Dynamic(val value: String) : UiText
+    data class Dynamic(
+        val value: String,
+    ) : UiText
 
-    data class Resource(@StringRes val id: Int) : UiText
+    data class Resource(
+        @StringRes val id: Int,
+    ) : UiText
 }
 
 @Composable
-fun UiText.asString(): String = when (this) {
-    is UiText.Dynamic -> value
-    is UiText.Resource -> stringResource(id)
-}
+fun UiText.asString(): String =
+    when (this) {
+        is UiText.Dynamic -> value
+        is UiText.Resource -> stringResource(id)
+    }

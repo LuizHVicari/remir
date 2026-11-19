@@ -18,21 +18,30 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 
 /** HTTP calls of the legal feature, built on the `core` Resources. Errors surface as `ApiException`. */
-class LegalApi(private val client: HttpClient) {
+class LegalApi(
+    private val client: HttpClient,
+) {
     suspend fun pending(): LegalStatusDto = client.get(MyLegalStatusResource()).body()
 
     suspend fun current(type: LegalDocumentType): LegalDocumentDto = client.get(LegalDocumentResource(type)).body()
 
-    suspend fun accept(type: LegalDocumentType, version: Int) {
+    suspend fun accept(
+        type: LegalDocumentType,
+        version: Int,
+    ) {
         client.post(LegalAcceptanceResource(type)) {
             contentType(ContentType.Application.Json)
             setBody(AcceptLegalDocumentRequest(version))
         }
     }
 
-    suspend fun publish(type: LegalDocumentType, request: PublishLegalDocumentRequest): LegalDocumentDto =
-        client.post(AdminLegalDocumentResource(type)) {
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }.body()
+    suspend fun publish(
+        type: LegalDocumentType,
+        request: PublishLegalDocumentRequest,
+    ): LegalDocumentDto =
+        client
+            .post(AdminLegalDocumentResource(type)) {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }.body()
 }

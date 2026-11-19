@@ -57,8 +57,7 @@ class AdminLegalViewModel(
             apiCall { api.current(type) }
                 .onSuccess { doc ->
                     _state.update { it.copy(loading = false, content = doc.content, currentVersion = doc.version) }
-                }
-                .onFailure { e -> onLoadFailed(e) }
+                }.onFailure { e -> onLoadFailed(e) }
         }
     }
 
@@ -76,7 +75,13 @@ class AdminLegalViewModel(
     }
 
     fun onContentChange(content: String) {
-        _state.update { it.copy(content = content, fieldErrors = it.fieldErrors - CONTENT_FIELD, publishedVersion = null) }
+        _state.update {
+            it.copy(
+                content = content,
+                fieldErrors = it.fieldErrors - CONTENT_FIELD,
+                publishedVersion = null,
+            )
+        }
     }
 
     fun onRequiresAcceptanceChange(requires: Boolean) {
@@ -104,10 +109,15 @@ class AdminLegalViewModel(
                             publishedVersion = doc.version,
                         )
                     }
-                }
-                .onFailure { e ->
+                }.onFailure { e ->
                     val fields = e.fieldErrors
-                    _state.update { it.copy(publishing = false, fieldErrors = fields, error = e.userMessage.takeIf { fields.isEmpty() }) }
+                    _state.update {
+                        it.copy(
+                            publishing = false,
+                            fieldErrors = fields,
+                            error = e.userMessage.takeIf { fields.isEmpty() },
+                        )
+                    }
                 }
         }
     }

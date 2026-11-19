@@ -23,5 +23,6 @@ class KtorServerConventionPlugin : Plugin<Project> {
         dependencies.add("implementation", dependencies.platform(libs.library("ktor-bom")))
         dependencies.add("testImplementation", dependencies.platform(libs.library("ktor-bom")))
         configureJUnit()
+        configureLint()
     }
 }

@@ -12,15 +12,20 @@ class ProfileService(
     private val clock: Clock = Clock.System,
 ) {
     /** Provisions the user on first access and returns the profile. */
-    suspend fun getOrProvision(userId: String): ProfileDto = dbQuery {
-        repository.provision(userId, clock.now())
-        repository.find(userId) ?: throw NotFound("User not found")
-    }
+    suspend fun getOrProvision(userId: String): ProfileDto =
+        dbQuery {
+            repository.provision(userId, clock.now())
+            repository.find(userId) ?: throw NotFound("User not found")
+        }
 
-    suspend fun update(userId: String, request: UpdateProfileRequest): ProfileDto = dbQuery {
-        val now = clock.now()
-        repository.provision(userId, now)
-        repository.updateDisplayName(userId, request.displayName, now)
-        repository.find(userId) ?: throw NotFound("User not found")
-    }
+    suspend fun update(
+        userId: String,
+        request: UpdateProfileRequest,
+    ): ProfileDto =
+        dbQuery {
+            val now = clock.now()
+            repository.provision(userId, now)
+            repository.updateDisplayName(userId, request.displayName, now)
+            repository.find(userId) ?: throw NotFound("User not found")
+        }
 }

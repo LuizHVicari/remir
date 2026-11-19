@@ -31,10 +31,11 @@ import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Instant
 
 @StringRes
-fun LegalDocumentType.titleRes(): Int = when (this) {
-    LegalDocumentType.Privacy -> R.string.legal_privacy_title
-    LegalDocumentType.Terms -> R.string.legal_terms_title
-}
+fun LegalDocumentType.titleRes(): Int =
+    when (this) {
+        LegalDocumentType.Privacy -> R.string.legal_privacy_title
+        LegalDocumentType.Terms -> R.string.legal_terms_title
+    }
 
 /**
  * Shows [content] once nothing is pending. While a document is pending, the user sees it and must accept
@@ -65,7 +66,12 @@ fun LegalAcceptanceScreen(
     Scaffold(topBar = { RemirTopBar(stringResource(document.type.titleRes())) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             Column(
-                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp),
+                modifier =
+                    Modifier
+                        .weight(
+                            1f,
+                        ).verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(stringResource(R.string.legal_review_prompt), style = MaterialTheme.typography.bodyMedium)
@@ -79,18 +85,25 @@ fun LegalAcceptanceScreen(
     }
 }
 
-private val sampleDocument = LegalDocumentDto(
-    type = LegalDocumentType.Privacy,
-    version = 2,
-    content = "# Privacy Policy\n\nRemir is operated by **Luiz Vicari**.\n\n## Data I process\n\n- Account data, handled by Clerk\n- The display name you choose",
-    requiresAcceptance = true,
-    effectiveAt = Instant.parse("2026-11-19T12:00:00Z"),
-)
+private val sampleDocument =
+    LegalDocumentDto(
+        type = LegalDocumentType.Privacy,
+        version = 2,
+        content =
+            "# Privacy Policy\n\nRemir is operated by **Luiz Vicari**.\n\n" +
+                "## Data I process\n\n- Account data, handled by Clerk\n- The display name you choose",
+        requiresAcceptance = true,
+        effectiveAt = Instant.parse("2026-11-19T12:00:00Z"),
+    )
 
 @PreviewLightDark
 @Composable
 private fun LegalAcceptanceScreenPreview() {
     RemirPreview {
-        LegalAcceptanceScreen(sampleDocument, LegalGateState(loading = false, pending = listOf(sampleDocument)), onAccept = {})
+        LegalAcceptanceScreen(
+            sampleDocument,
+            LegalGateState(loading = false, pending = listOf(sampleDocument)),
+            onAccept = {},
+        )
     }
 }

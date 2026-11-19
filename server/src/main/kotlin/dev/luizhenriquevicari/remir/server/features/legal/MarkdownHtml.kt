@@ -39,34 +39,63 @@ private val parser = MarkdownParser(CommonMarkFlavourDescriptor())
  */
 fun FlowContent.markdown(source: String) {
     val tree = parser.buildMarkdownTreeFromString(source)
-    MarkdownRenderer(source).run { blocks(tree) }
+    val inlines = InlineRenderer(source)
+    BlockRenderer(source, inlines).run { blocks(tree) }
 }
 
 private val ALLOWED_LINK_PREFIXES = listOf("https://", "http://", "mailto:")
 
 private fun isSafeLink(url: String) = ALLOWED_LINK_PREFIXES.any { url.startsWith(it, ignoreCase = true) }
 
-private class MarkdownRenderer(private val source: String) {
-    private fun ASTNode.text(): String = getTextInNode(source).toString()
+private fun ASTNode.childrenWithout(vararg types: IElementType): List<ASTNode> = children.filter { it.type !in types }
 
-    private fun ASTNode.childrenWithout(vararg types: IElementType): List<ASTNode> = children.filter { it.type !in types }
+/** `<h1>` to `<h6>`, indexed by heading level minus one. */
+private val HEADINGS: List<FlowContent.(FlowOrPhrasingContent.() -> Unit) -> Unit> =
+    listOf(
+        { content -> h1 { content() } },
+        { content -> h2 { content() } },
+        { content -> h3 { content() } },
+        { content -> h4 { content() } },
+        { content -> h5 { content() } },
+        { content -> h6 { content() } },
+    )
 
+private val ATX_HEADINGS =
+    listOf(
+        MarkdownElementTypes.ATX_1,
+        MarkdownElementTypes.ATX_2,
+        MarkdownElementTypes.ATX_3,
+        MarkdownElementTypes.ATX_4,
+        MarkdownElementTypes.ATX_5,
+        MarkdownElementTypes.ATX_6,
+    )
+
+/** Heading level (1 to 6) of a node type, or null when it is not a heading. */
+private fun headingLevel(type: IElementType): Int? =
+    when (type) {
+        MarkdownElementTypes.SETEXT_1 -> 1
+        MarkdownElementTypes.SETEXT_2 -> 2
+        else -> ATX_HEADINGS.indexOf(type).takeIf { it >= 0 }?.plus(1)
+    }
+
+private class BlockRenderer(
+    private val source: String,
+    private val inlines: InlineRenderer,
+) {
     fun FlowContent.blocks(parent: ASTNode) = parent.children.forEach { block(it) }
 
     private fun FlowContent.block(node: ASTNode) {
+        val level = headingLevel(node.type)
+        if (level != null) {
+            heading(level, node)
+            return
+        }
         when (node.type) {
-            MarkdownElementTypes.ATX_1, MarkdownElementTypes.SETEXT_1 -> heading(1, node)
-            MarkdownElementTypes.ATX_2, MarkdownElementTypes.SETEXT_2 -> heading(2, node)
-            MarkdownElementTypes.ATX_3 -> heading(3, node)
-            MarkdownElementTypes.ATX_4 -> heading(4, node)
-            MarkdownElementTypes.ATX_5 -> heading(5, node)
-            MarkdownElementTypes.ATX_6 -> heading(6, node)
-            MarkdownElementTypes.PARAGRAPH -> p { inlines(node.children) }
-            MarkdownElementTypes.UNORDERED_LIST -> ul { node.children.filter { it.type == MarkdownElementTypes.LIST_ITEM }.forEach { item(it) } }
-            MarkdownElementTypes.ORDERED_LIST -> ol { node.children.filter { it.type == MarkdownElementTypes.LIST_ITEM }.forEach { item(it) } }
-            MarkdownElementTypes.BLOCK_QUOTE -> blockQuote {
-                node.childrenWithout(MarkdownTokenTypes.BLOCK_QUOTE).forEach { block(it) }
-            }
+            MarkdownElementTypes.PARAGRAPH -> p { with(inlines) { inlines(node.children) } }
+            MarkdownElementTypes.UNORDERED_LIST -> ul { listItems(node).forEach { item(it) } }
+            MarkdownElementTypes.ORDERED_LIST -> ol { listItems(node).forEach { item(it) } }
+            MarkdownElementTypes.BLOCK_QUOTE ->
+                blockQuote { node.childrenWithout(MarkdownTokenTypes.BLOCK_QUOTE).forEach { block(it) } }
             MarkdownElementTypes.CODE_FENCE, MarkdownElementTypes.CODE_BLOCK -> pre { code { +codeText(node) } }
             MarkdownTokenTypes.HORIZONTAL_RULE -> hr()
             // Whitespace, EOL and raw HTML blocks are intentionally ignored.
@@ -74,20 +103,23 @@ private class MarkdownRenderer(private val source: String) {
         }
     }
 
-    private fun FlowContent.heading(level: Int, node: ASTNode) {
-        val content = node.children.firstOrNull {
-            it.type == MarkdownTokenTypes.ATX_CONTENT || it.type == MarkdownTokenTypes.SETEXT_CONTENT
-        }
+    private fun FlowContent.heading(
+        level: Int,
+        node: ASTNode,
+    ) {
+        val content =
+            node.children.firstOrNull {
+                it.type == MarkdownTokenTypes.ATX_CONTENT || it.type == MarkdownTokenTypes.SETEXT_CONTENT
+            }
         val inner = content?.children?.dropWhile { it.type == MarkdownTokenTypes.WHITE_SPACE }.orEmpty()
-        when (level) {
-            1 -> h1 { inlines(inner) }
-            2 -> h2 { inlines(inner) }
-            3 -> h3 { inlines(inner) }
-            4 -> h4 { inlines(inner) }
-            5 -> h5 { inlines(inner) }
-            else -> h6 { inlines(inner) }
-        }
+        HEADINGS[level - 1](this) { with(inlines) { inlines(inner) } }
     }
+
+    private fun listItems(list: ASTNode): List<ASTNode> =
+        list.children.filter {
+            it.type ==
+                MarkdownElementTypes.LIST_ITEM
+        }
 
     private fun UL.item(node: ASTNode) = li { listItemContent(node) }
 
@@ -98,7 +130,7 @@ private class MarkdownRenderer(private val source: String) {
         val content = node.childrenWithout(MarkdownTokenTypes.LIST_BULLET, MarkdownTokenTypes.LIST_NUMBER)
         content.forEach {
             when (it.type) {
-                MarkdownElementTypes.PARAGRAPH -> inlines(it.children)
+                MarkdownElementTypes.PARAGRAPH -> with(inlines) { inlines(it.children) }
                 else -> block(it)
             }
         }
@@ -106,17 +138,27 @@ private class MarkdownRenderer(private val source: String) {
 
     private fun codeText(node: ASTNode): String =
         node.children
-            .filter { it.type == MarkdownTokenTypes.CODE_FENCE_CONTENT || it.type == MarkdownTokenTypes.CODE_LINE || it.type == MarkdownTokenTypes.EOL }
-            .joinToString("") { it.text() }
+            .filter {
+                it.type == MarkdownTokenTypes.CODE_FENCE_CONTENT ||
+                    it.type == MarkdownTokenTypes.CODE_LINE ||
+                    it.type == MarkdownTokenTypes.EOL
+            }.joinToString("") { it.getTextInNode(source).toString() }
             .trim('\n')
+}
 
-    private fun FlowOrPhrasingContent.inlines(nodes: List<ASTNode>) = nodes.forEach { inline(it) }
+private class InlineRenderer(
+    private val source: String,
+) {
+    private fun ASTNode.text(): String = getTextInNode(source).toString()
+
+    fun FlowOrPhrasingContent.inlines(nodes: List<ASTNode>) = nodes.forEach { inline(it) }
 
     private fun FlowOrPhrasingContent.inline(node: ASTNode) {
         when (node.type) {
             MarkdownElementTypes.EMPH -> em { inlines(node.childrenWithout(MarkdownTokenTypes.EMPH)) }
             MarkdownElementTypes.STRONG -> strong { inlines(node.childrenWithout(MarkdownTokenTypes.EMPH)) }
-            MarkdownElementTypes.CODE_SPAN -> code { +node.childrenWithout(MarkdownTokenTypes.BACKTICK).joinToString("") { it.text() } }
+            MarkdownElementTypes.CODE_SPAN ->
+                code { +node.childrenWithout(MarkdownTokenTypes.BACKTICK).joinToString("") { it.text() } }
             MarkdownElementTypes.INLINE_LINK -> inlineLink(node)
             MarkdownElementTypes.AUTOLINK -> autoLink(node)
             MarkdownTokenTypes.HARD_LINE_BREAK -> br()
@@ -138,7 +180,11 @@ private class MarkdownRenderer(private val source: String) {
     private fun FlowOrPhrasingContent.inlineLink(node: ASTNode) {
         val label = node.children.firstOrNull { it.type == MarkdownElementTypes.LINK_TEXT }
         val labelNodes = label?.childrenWithout(MarkdownTokenTypes.LBRACKET, MarkdownTokenTypes.RBRACKET).orEmpty()
-        val destination = node.children.firstOrNull { it.type == MarkdownElementTypes.LINK_DESTINATION }?.text().orEmpty()
+        val destination =
+            node.children
+                .firstOrNull { it.type == MarkdownElementTypes.LINK_DESTINATION }
+                ?.text()
+                .orEmpty()
         if (!isSafeLink(destination)) {
             inlines(labelNodes)
             return

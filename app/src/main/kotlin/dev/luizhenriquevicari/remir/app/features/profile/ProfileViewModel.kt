@@ -22,7 +22,10 @@ data class ProfileState(
     val loading: Boolean = true,
     val profile: ProfileDto? = null,
     val displayName: String = "",
-    /** Errors per field (key = JSON field name), from local Konform validation and from the server (`ApiError.fields`). */
+    /**
+     * Errors per field (key = JSON field name), from local Konform validation and from the server
+     * (`ApiError.fields`).
+     */
     val fieldErrors: Map<String, String> = emptyMap(),
     /** General error (network, 500...). */
     val error: UiText? = null,
@@ -46,13 +49,26 @@ class ProfileViewModel(
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
             apiCall { api.get() }
-                .onSuccess { profile -> _state.update { it.copy(loading = false, profile = profile, displayName = profile.displayName.orEmpty()) } }
-                .onFailure { e -> _state.update { it.copy(loading = false, error = e.userMessage) } }
+                .onSuccess { profile ->
+                    _state.update {
+                        it.copy(
+                            loading = false,
+                            profile = profile,
+                            displayName = profile.displayName.orEmpty(),
+                        )
+                    }
+                }.onFailure { e -> _state.update { it.copy(loading = false, error = e.userMessage) } }
         }
     }
 
     fun onDisplayNameChange(displayName: String) {
-        _state.update { it.copy(displayName = displayName, fieldErrors = it.fieldErrors - DISPLAY_NAME_FIELD, saved = false) }
+        _state.update {
+            it.copy(
+                displayName = displayName,
+                fieldErrors = it.fieldErrors - DISPLAY_NAME_FIELD,
+                saved = false,
+            )
+        }
     }
 
     fun save() {
@@ -67,11 +83,23 @@ class ProfileViewModel(
         viewModelScope.launch {
             apiCall { api.update(request) }
                 .onSuccess { profile ->
-                    _state.update { it.copy(saving = false, saved = true, profile = profile, displayName = profile.displayName.orEmpty()) }
-                }
-                .onFailure { e ->
+                    _state.update {
+                        it.copy(
+                            saving = false,
+                            saved = true,
+                            profile = profile,
+                            displayName = profile.displayName.orEmpty(),
+                        )
+                    }
+                }.onFailure { e ->
                     val fields = e.fieldErrors
-                    _state.update { it.copy(saving = false, fieldErrors = fields, error = e.userMessage.takeIf { fields.isEmpty() }) }
+                    _state.update {
+                        it.copy(
+                            saving = false,
+                            fieldErrors = fields,
+                            error = e.userMessage.takeIf { fields.isEmpty() },
+                        )
+                    }
                 }
         }
     }

@@ -19,25 +19,28 @@ object TestDatabase {
     private const val POSTGRES_PORT = 5432
 
     /** Same image as `generateMigrations`, passed by Gradle (see server/build.gradle.kts). */
-    private val image: String = requireNotNull(System.getProperty("remir.postgresImage")) {
-        "System property remir.postgresImage is missing; run the tests through Gradle"
-    }
+    private val image: String =
+        requireNotNull(System.getProperty("remir.postgresImage")) {
+            "System property remir.postgresImage is missing; run the tests through Gradle"
+        }
 
     private val container: PostgreSQLContainer by lazy {
         PostgreSQLContainer(image).apply { start() }
     }
 
     val dependencies: Dependencies by lazy {
-        val config = AppConfig(
-            database = DatabaseConfig(
-                host = container.host,
-                port = container.getMappedPort(POSTGRES_PORT),
-                name = container.databaseName,
-                user = container.username,
-                password = container.password,
-            ),
-            clerk = ClerkConfig(TestJwt.ISSUER),
-        )
+        val config =
+            AppConfig(
+                database =
+                    DatabaseConfig(
+                        host = container.host,
+                        port = container.getMappedPort(POSTGRES_PORT),
+                        name = container.databaseName,
+                        user = container.username,
+                        password = container.password,
+                    ),
+                clerk = ClerkConfig(TestJwt.ISSUER),
+            )
         Dependencies.create(config, TestJwt.jwkProvider)
     }
 }
@@ -47,9 +50,10 @@ object TestDatabase {
  * `config = MapApplicationConfig()` stops `testApplication` from loading `application.conf`
  * (and the production `module()`, which would read the real env vars).
  */
-fun remirTestApplication(block: suspend ApplicationTestBuilder.(client: HttpClient) -> Unit) = testApplication {
-    environment { config = MapApplicationConfig() }
-    application { setup(TestDatabase.dependencies) }
-    val client = createClient { install(ContentNegotiation) { json(RemirJson) } }
-    block(client)
-}
+fun remirTestApplication(block: suspend ApplicationTestBuilder.(client: HttpClient) -> Unit) =
+    testApplication {
+        environment { config = MapApplicationConfig() }
+        application { setup(TestDatabase.dependencies) }
+        val client = createClient { install(ContentNegotiation) { json(RemirJson) } }
+        block(client)
+    }

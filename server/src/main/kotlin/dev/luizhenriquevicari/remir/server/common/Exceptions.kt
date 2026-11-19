@@ -9,11 +9,17 @@ sealed class DomainException(
     message: String,
 ) : RuntimeException(message)
 
-class NotFound(message: String = "Resource not found") : DomainException("not_found", message)
+class NotFound(
+    message: String = "Resource not found",
+) : DomainException("not_found", message)
 
-class Conflict(message: String) : DomainException("conflict", message)
+class Conflict(
+    message: String,
+) : DomainException("conflict", message)
 
-class Forbidden(message: String = "Access denied") : DomainException("forbidden", message)
+class Forbidden(
+    message: String = "Access denied",
+) : DomainException("forbidden", message)
 
 class ValidationFailed(
     val fields: Map<String, String>,

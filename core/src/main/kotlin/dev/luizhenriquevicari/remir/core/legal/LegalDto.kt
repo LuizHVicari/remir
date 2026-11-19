@@ -6,7 +6,9 @@ import kotlin.time.Instant
 
 /** Legal documents the user must accept. `slug` is the value used in URLs and in the database. */
 @Serializable
-enum class LegalDocumentType(val slug: String) {
+enum class LegalDocumentType(
+    val slug: String,
+) {
     @SerialName("privacy")
     Privacy("privacy"),
 

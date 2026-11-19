@@ -61,7 +61,12 @@ fun ProfileScreen(
         val modifier = Modifier.padding(padding)
         when {
             state.loading -> Loading(modifier)
-            state.profile == null -> ErrorState(state.error?.asString() ?: stringResource(R.string.profile_unavailable), modifier, onRetry)
+            state.profile == null ->
+                ErrorState(
+                    state.error?.asString() ?: stringResource(R.string.profile_unavailable),
+                    modifier,
+                    onRetry,
+                )
             else -> ProfileContent(state, state.profile, onDisplayNameChange, onSave, onSignOut, modifier)
         }
     }
@@ -80,8 +85,14 @@ private fun ProfileContent(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(profile.displayName ?: stringResource(R.string.profile_no_name), style = MaterialTheme.typography.headlineSmall)
-        Text(stringResource(R.string.profile_member_since, profile.createdAt.toLocalizedDate()), style = MaterialTheme.typography.bodyMedium)
+        Text(
+            profile.displayName ?: stringResource(R.string.profile_no_name),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        Text(
+            stringResource(R.string.profile_member_since, profile.createdAt.toLocalizedDate()),
+            style = MaterialTheme.typography.bodyMedium,
+        )
         RemirTextField(
             value = state.displayName,
             onValueChange = onDisplayNameChange,
@@ -96,25 +107,31 @@ private fun ProfileContent(
     }
 }
 
-private val sampleProfile = ProfileDto(
-    id = "user_2abc",
-    displayName = "Luiz",
-    createdAt = Instant.parse("2026-01-10T12:00:00Z"),
-    updatedAt = Instant.parse("2026-01-10T12:00:00Z"),
-)
+private val sampleProfile =
+    ProfileDto(
+        id = "user_2abc",
+        displayName = "Luiz",
+        createdAt = Instant.parse("2026-01-10T12:00:00Z"),
+        updatedAt = Instant.parse("2026-01-10T12:00:00Z"),
+    )
 
 @PreviewLightDark
 @Composable
 private fun ProfileScreenPreview() {
     RemirPreview {
         ProfileScreen(
-            state = ProfileState(
-                loading = false,
-                profile = sampleProfile,
-                displayName = "L",
-                fieldErrors = mapOf("displayName" to "must have between 2 and 60 characters"),
-            ),
-            onBack = {}, onDisplayNameChange = {}, onSave = {}, onSignOut = {}, onRetry = {},
+            state =
+                ProfileState(
+                    loading = false,
+                    profile = sampleProfile,
+                    displayName = "L",
+                    fieldErrors = mapOf("displayName" to "must have between 2 and 60 characters"),
+                ),
+            onBack = {},
+            onDisplayNameChange = {},
+            onSave = {},
+            onSignOut = {},
+            onRetry = {},
         )
     }
 }

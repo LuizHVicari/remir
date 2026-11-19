@@ -8,7 +8,8 @@ import kotlin.test.assertEquals
 
 class HealthTest {
     @Test
-    fun `GET health answers 200 without a token`() = remirTestApplication { client ->
-        assertEquals(HttpStatusCode.OK, client.get("/health").status)
-    }
+    fun `GET health answers 200 without a token`() =
+        remirTestApplication { client ->
+            assertEquals(HttpStatusCode.OK, client.get("/health").status)
+        }
 }

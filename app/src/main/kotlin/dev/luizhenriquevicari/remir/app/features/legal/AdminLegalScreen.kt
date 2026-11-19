@@ -62,7 +62,12 @@ fun AdminLegalScreen(
 ) {
     Scaffold(topBar = { RemirTopBar(stringResource(R.string.legal_admin_title), onBack = onBack) }) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             TypeSelector(state.type, onSelectType)
@@ -82,7 +87,10 @@ fun AdminLegalScreen(
             )
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Switch(checked = state.requiresAcceptance, onCheckedChange = onRequiresAcceptanceChange)
-                Text(stringResource(R.string.legal_admin_requires_acceptance), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    stringResource(R.string.legal_admin_requires_acceptance),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
             }
             state.error?.let { Text(it.asString(), color = MaterialTheme.colorScheme.error) }
             state.publishedVersion?.let {
@@ -94,7 +102,10 @@ fun AdminLegalScreen(
 }
 
 @Composable
-private fun TypeSelector(selected: LegalDocumentType, onSelect: (LegalDocumentType) -> Unit) {
+private fun TypeSelector(
+    selected: LegalDocumentType,
+    onSelect: (LegalDocumentType) -> Unit,
+) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         LegalDocumentType.entries.forEach { type ->
             FilterChip(
@@ -108,9 +119,10 @@ private fun TypeSelector(selected: LegalDocumentType, onSelect: (LegalDocumentTy
 
 @Composable
 private fun VersionLabel(state: AdminLegalState) {
-    val text = state.currentVersion
-        ?.let { stringResource(R.string.legal_admin_current_version, it) }
-        ?: stringResource(R.string.legal_admin_not_published)
+    val text =
+        state.currentVersion
+            ?.let { stringResource(R.string.legal_admin_current_version, it) }
+            ?: stringResource(R.string.legal_admin_not_published)
     Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
@@ -119,13 +131,14 @@ private fun VersionLabel(state: AdminLegalState) {
 private fun AdminLegalScreenPreview() {
     RemirPreview {
         AdminLegalScreen(
-            state = AdminLegalState(
-                loading = false,
-                content = "# Privacy Policy\n\nRemir is operated by Luiz Vicari.",
-                currentVersion = 2,
-                publishedVersion = 2,
-                fieldErrors = emptyMap(),
-            ),
+            state =
+                AdminLegalState(
+                    loading = false,
+                    content = "# Privacy Policy\n\nRemir is operated by Luiz Vicari.",
+                    currentVersion = 2,
+                    publishedVersion = 2,
+                    fieldErrors = emptyMap(),
+                ),
             onBack = {},
             onSelectType = {},
             onContentChange = {},
@@ -140,11 +153,12 @@ private fun AdminLegalScreenPreview() {
 private fun AdminLegalScreenEmptyPreview() {
     RemirPreview {
         AdminLegalScreen(
-            state = AdminLegalState(
-                loading = false,
-                type = LegalDocumentType.Terms,
-                fieldErrors = mapOf("content" to "must not be blank or start/end with spaces"),
-            ),
+            state =
+                AdminLegalState(
+                    loading = false,
+                    type = LegalDocumentType.Terms,
+                    fieldErrors = mapOf("content" to "must not be blank or start/end with spaces"),
+                ),
             onBack = {},
             onSelectType = {},
             onContentChange = {},

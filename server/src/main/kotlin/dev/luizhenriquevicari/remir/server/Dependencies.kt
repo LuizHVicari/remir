@@ -27,7 +27,9 @@ class Dependencies(
     override fun close() = dataSource.close()
 
     companion object {
-        fun create(config: AppConfig, jwkProvider: JwkProvider = clerkJwkProvider(config.clerk.issuer)) =
-            Dependencies(config, jwkProvider, connectDatabase(config.database))
+        fun create(
+            config: AppConfig,
+            jwkProvider: JwkProvider = clerkJwkProvider(config.clerk.issuer),
+        ) = Dependencies(config, jwkProvider, connectDatabase(config.database))
     }
 }

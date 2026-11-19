@@ -1,11 +1,13 @@
 package dev.luizhenriquevicari.remir.buildlogic
 
+import dev.detekt.gradle.extensions.DetektExtension
 import org.gradle.api.Project
 import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.artifacts.VersionCatalog
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.testing.Test
+import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.withType
 
@@ -19,6 +21,19 @@ internal fun VersionCatalog.library(alias: String): Provider<MinimalExternalModu
 
 internal val Project.jvmVersion: Int
     get() = libs.version("jvm").toInt()
+
+/**
+ * ktlint (formatting, `.editorconfig` at the root) and detekt (static analysis, `config/detekt/detekt.yml`).
+ * Run with `./gradlew ktlintCheck detekt`; `./gradlew ktlintFormat` fixes formatting.
+ */
+internal fun Project.configureLint() {
+    pluginManager.apply("org.jlleitschuh.gradle.ktlint")
+    pluginManager.apply("dev.detekt")
+    extensions.configure<DetektExtension> {
+        config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+        buildUponDefaultConfig.set(true)
+    }
+}
 
 /** JUnit Platform + explicit launcher (required by Gradle 9). */
 internal fun Project.configureJUnit() {

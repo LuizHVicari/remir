@@ -24,19 +24,23 @@ object TestJwt {
     private val publicKey = keyPair.public as RSAPublicKey
     private val privateKey = keyPair.private as RSAPrivateKey
 
-    private val jwk: Jwk = Jwk.fromValues(
-        mapOf(
-            "kid" to KEY_ID,
-            "kty" to "RSA",
-            "alg" to "RS256",
-            "use" to "sig",
-            "n" to publicKey.modulus.toBase64Url(),
-            "e" to publicKey.publicExponent.toBase64Url(),
-        ),
-    )
+    private val jwk: Jwk =
+        Jwk.fromValues(
+            mapOf(
+                "kid" to KEY_ID,
+                "kty" to "RSA",
+                "alg" to "RS256",
+                "use" to "sig",
+                "n" to publicKey.modulus.toBase64Url(),
+                "e" to publicKey.publicExponent.toBase64Url(),
+            ),
+        )
 
     /** In-memory equivalent of `$CLERK_ISSUER/.well-known/jwks.json`. */
-    val jwkProvider = JwkProvider { kid -> jwk.takeIf { kid == KEY_ID } ?: throw SigningKeyNotFoundException(kid, null) }
+    val jwkProvider =
+        JwkProvider { kid ->
+            jwk.takeIf { kid == KEY_ID } ?: throw SigningKeyNotFoundException(kid, null)
+        }
 
     /**
      * Creates a token shaped like Clerk's (`sub` = `user_...`).
@@ -49,13 +53,15 @@ object TestJwt {
         role: String? = null,
     ): String {
         val now = Instant.now()
-        val builder = JWT.create()
-            .withKeyId(KEY_ID)
-            .withIssuer(issuer)
-            .withSubject(subject)
-            .withIssuedAt(now)
-            .withNotBefore(now)
-            .withExpiresAt(now.plus(expiresIn.toJavaDuration()))
+        val builder =
+            JWT
+                .create()
+                .withKeyId(KEY_ID)
+                .withIssuer(issuer)
+                .withSubject(subject)
+                .withIssuedAt(now)
+                .withNotBefore(now)
+                .withExpiresAt(now.plus(expiresIn.toJavaDuration()))
         role?.let { builder.withClaim("metadata", mapOf("role" to it)) }
         return builder.sign(Algorithm.RSA256(publicKey, privateKey))
     }

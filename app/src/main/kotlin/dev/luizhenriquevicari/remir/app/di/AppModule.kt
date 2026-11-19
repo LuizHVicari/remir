@@ -13,19 +13,20 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
-val appModule = module {
-    singleOf(::ClerkSession)
-    single { createHttpClient(BuildConfig.API_URL, get<ClerkSession>()::token) }
+val appModule =
+    module {
+        singleOf(::ClerkSession)
+        single { createHttpClient(BuildConfig.API_URL, get<ClerkSession>()::token) }
 
-    // home
-    viewModelOf(::HomeViewModel)
+        // home
+        viewModelOf(::HomeViewModel)
 
-    // profile
-    singleOf(::ProfileApi)
-    viewModelOf(::ProfileViewModel)
+        // profile
+        singleOf(::ProfileApi)
+        viewModelOf(::ProfileViewModel)
 
-    // legal
-    singleOf(::LegalApi)
-    viewModelOf(::LegalGateViewModel)
-    viewModelOf(::AdminLegalViewModel)
-}
+        // legal
+        singleOf(::LegalApi)
+        viewModelOf(::LegalGateViewModel)
+        viewModelOf(::AdminLegalViewModel)
+    }

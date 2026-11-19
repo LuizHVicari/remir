@@ -8,19 +8,27 @@ plugins {
 // Debug config is machine-local: it comes from local.properties (NEVER committed).
 // Release config is not: it must come from a Gradle property or an environment variable, so a release
 // never depends on one developer's machine. See README.
-val localProperties = Properties().apply {
-    val file = rootProject.file("local.properties")
-    if (file.exists()) file.inputStream().use(::load)
-}
+val localProperties =
+    Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) file.inputStream().use(::load)
+    }
 
-fun localProperty(key: String, default: String): String = localProperties.getProperty(key, default)
+fun localProperty(
+    key: String,
+    default: String,
+): String = localProperties.getProperty(key, default)
 
 /**
  * Release value from `-P<property>` (or `~/.gradle/gradle.properties`), else the `<envVar>` environment
  * variable. Lazy: it only fails when the release BuildConfig is generated, never for debug builds.
  */
-fun requiredForRelease(property: String, envVar: String): Provider<String> =
-    providers.gradleProperty(property)
+fun requiredForRelease(
+    property: String,
+    envVar: String,
+): Provider<String> =
+    providers
+        .gradleProperty(property)
         .orElse(providers.environmentVariable(envVar))
         .orElse("")
         .map { value ->
@@ -64,10 +72,13 @@ android {
 
 androidComponents {
     onVariants(selector().withBuildType("release")) { variant ->
-        val apiUrl = requiredForRelease("remir.api.url", "REMIR_API_URL").map { url ->
-            require(url.startsWith("https://")) { "remir.api.url must be https:// in a release build (got '$url')." }
-            url
-        }
+        val apiUrl =
+            requiredForRelease("remir.api.url", "REMIR_API_URL").map { url ->
+                require(
+                    url.startsWith("https://"),
+                ) { "remir.api.url must be https:// in a release build (got '$url')." }
+                url
+            }
         val clerkKey = requiredForRelease("remir.clerk.publishableKey", "REMIR_CLERK_PUBLISHABLE_KEY")
         // No references to script members in these lambdas: the configuration cache can't serialize them.
         variant.buildConfigFields?.put("API_URL", apiUrl.map { BuildConfigField("String", "\"$it\"", null) })

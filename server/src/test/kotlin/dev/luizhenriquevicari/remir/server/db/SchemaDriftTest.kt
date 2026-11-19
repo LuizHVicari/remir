@@ -10,13 +10,23 @@ import kotlin.test.assertTrue
 /** Fails when an Exposed `Table` changed but no migration was generated for it. */
 class SchemaDriftTest {
     @Test
-    fun `flyway migrations match the exposed tables`() = runTest {
-        TestDatabase.dependencies // runs Flyway
-        val tables = ExposedTables.all()
-        assertTrue(tables.isNotEmpty(), "No Exposed tables found")
+    fun `flyway migrations match the exposed tables`() =
+        runTest {
+            TestDatabase.dependencies // runs Flyway
+            val tables = ExposedTables.all()
+            assertTrue(tables.isNotEmpty(), "No Exposed tables found")
 
-        val pending = dbQuery { MigrationUtils.statementsRequiredForDatabaseMigration(*tables.toTypedArray(), withLogs = false) }
+            val pending =
+                dbQuery {
+                    MigrationUtils.statementsRequiredForDatabaseMigration(
+                        *tables.toTypedArray(),
+                        withLogs = false,
+                    )
+                }
 
-        assertTrue(pending.isEmpty(), "Schema drift; run ./gradlew :server:generateMigrations. Pending:\n${pending.joinToString("\n")}")
-    }
+            assertTrue(
+                pending.isEmpty(),
+                "Schema drift; run ./gradlew :server:generateMigrations. Pending:\n${pending.joinToString("\n")}",
+            )
+        }
 }

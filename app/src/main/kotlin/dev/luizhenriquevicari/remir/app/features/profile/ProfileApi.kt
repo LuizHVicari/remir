@@ -12,12 +12,15 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 
 /** HTTP calls of the feature, built on the `core` Resources. Errors surface as `ApiException`. */
-class ProfileApi(private val client: HttpClient) {
+class ProfileApi(
+    private val client: HttpClient,
+) {
     suspend fun get(): ProfileDto = client.get(MeResource()).body()
 
     suspend fun update(request: UpdateProfileRequest): ProfileDto =
-        client.put(MeResource()) {
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }.body()
+        client
+            .put(MeResource()) {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }.body()
 }
