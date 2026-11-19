@@ -17,6 +17,8 @@ import dev.luizhenriquevicari.remir.app.designsystem.RemirTheme
 import dev.luizhenriquevicari.remir.app.designsystem.components.ErrorState
 import dev.luizhenriquevicari.remir.app.designsystem.components.Loading
 import dev.luizhenriquevicari.remir.app.features.home.HomeRoute
+import dev.luizhenriquevicari.remir.app.features.legal.AdminLegalRoute
+import dev.luizhenriquevicari.remir.app.features.legal.LegalGate
 import dev.luizhenriquevicari.remir.app.features.profile.ProfileRoute
 import dev.luizhenriquevicari.remir.app.navigation.Destination
 
@@ -47,7 +49,7 @@ private fun SessionGate() {
         // TODO(verify): Clerk's KDoc warns that AuthView loses typed input when the Activity is its
         // ViewModelStoreOwner (e.g. on rotation). If that bites, host AuthView in a navigation destination.
         !signedIn -> AuthView(modifier = Modifier.safeDrawingPadding(), isDismissible = false)
-        else -> RemirNavHost()
+        else -> LegalGate { RemirNavHost() }
     }
 }
 
@@ -56,7 +58,13 @@ private fun RemirNavHost() {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Destination.Home) {
         composable<Destination.Home> {
-            HomeRoute(onOpenProfile = { navController.navigate(Destination.Profile) })
+            HomeRoute(
+                onOpenProfile = { navController.navigate(Destination.Profile) },
+                onOpenLegalAdmin = { navController.navigate(Destination.LegalAdmin) },
+            )
+        }
+        composable<Destination.LegalAdmin> {
+            AdminLegalRoute(onBack = { navController.popBackStack() })
         }
         composable<Destination.Profile> {
             ProfileRoute(onBack = { navController.popBackStack() })

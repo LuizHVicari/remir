@@ -12,6 +12,20 @@
     <string name="home_title">Remir</string>
     <string name="home_coming_soon">Expenses, church, habits, work, study and fitness are coming soon.</string>
     <string name="home_open_profile">My profile</string>
+    <string name="home_open_legal_admin">Legal documents</string>
+
+    <string name="legal_privacy_title">Privacy Policy</string>
+    <string name="legal_terms_title">Terms of Service</string>
+    <string name="legal_accept">Accept and continue</string>
+    <string name="legal_review_prompt">Please review and accept to continue.</string>
+
+    <string name="legal_admin_title">Legal documents</string>
+    <string name="legal_admin_content">Content (Markdown)</string>
+    <string name="legal_admin_requires_acceptance">Ask users to accept again</string>
+    <string name="legal_admin_publish">Publish new version</string>
+    <string name="legal_admin_not_published">Not published yet</string>
+    <string name="legal_admin_current_version">Current version: %1$d</string>
+    <string name="legal_admin_published">Published version %1$d</string>
 
     <string name="profile_title">Profile</string>
     <string name="profile_no_name">No name yet</string>

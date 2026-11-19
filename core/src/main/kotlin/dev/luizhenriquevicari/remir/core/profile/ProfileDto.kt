@@ -10,4 +10,6 @@ data class ProfileDto(
     val displayName: String?,
     val createdAt: Instant,
     val updatedAt: Instant,
+    /** Computed by the server from the token's `metadata.role` claim; never stored, never read from the client. */
+    val isAdmin: Boolean = false,
 )

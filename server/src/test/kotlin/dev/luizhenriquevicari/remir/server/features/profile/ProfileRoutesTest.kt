@@ -18,6 +18,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
@@ -67,6 +68,17 @@ class ProfileRoutesTest {
         // A second access neither duplicates nor changes the user.
         val again = client.get("/me") { bearerAuth(TestJwt.token(userId)) }.body<ProfileDto>()
         assertEquals(profile, again)
+    }
+
+    @Test
+    fun `GET me reports isAdmin only for tokens with the admin role`() = remirTestApplication { client ->
+        val admin = client.get("/me") { bearerAuth(TestJwt.token(newUserId(), role = "admin")) }.body<ProfileDto>()
+        val regular = client.get("/me") { bearerAuth(TestJwt.token(newUserId())) }.body<ProfileDto>()
+        val otherRole = client.get("/me") { bearerAuth(TestJwt.token(newUserId(), role = "moderator")) }.body<ProfileDto>()
+
+        assertTrue(admin.isAdmin)
+        assertFalse(regular.isAdmin)
+        assertFalse(otherRole.isAdmin)
     }
 
     @Test

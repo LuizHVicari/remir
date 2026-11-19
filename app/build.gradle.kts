@@ -104,6 +104,8 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.client.resources)
 
+    implementation(libs.jetbrains.markdown)
+
     implementation(libs.clerk.api)
     implementation(libs.clerk.ui)
 }

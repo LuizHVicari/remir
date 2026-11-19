@@ -22,6 +22,8 @@ fun RemirTextField(
     modifier: Modifier = Modifier,
     error: String? = null,
     enabled: Boolean = true,
+    singleLine: Boolean = true,
+    minLines: Int = 1,
 ) {
     OutlinedTextField(
         value = value,
@@ -30,7 +32,8 @@ fun RemirTextField(
         isError = error != null,
         supportingText = error?.let { { Text(it) } },
         enabled = enabled,
-        singleLine = true,
+        singleLine = singleLine,
+        minLines = minLines,
         shape = MaterialTheme.shapes.medium,
         modifier = modifier.fillMaxWidth(),
     )
@@ -50,6 +53,13 @@ private fun RemirTextFieldPreview() {
                 error = "must have between 2 and 60 characters",
             )
             RemirTextField(value = "Luiz", onValueChange = {}, label = "Display name", enabled = false)
+            RemirTextField(
+                value = "# Title\n\nSome text",
+                onValueChange = {},
+                label = "Content",
+                singleLine = false,
+                minLines = 4,
+            )
         }
     }
 }
