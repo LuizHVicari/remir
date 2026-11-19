@@ -108,7 +108,19 @@ This follows [Clerk's basic RBAC guide](https://clerk.com/docs/guides/secure/bas
 
 ## Deploy: Cloud Run + Neon
 
-The API runs on Google Cloud Run with the database on Neon. A push to `main` runs the tests, builds the image from the `Dockerfile`, publishes it to Artifact Registry and updates the Cloud Run service (`.github/workflows/server.yml`).
+The API runs on Google Cloud Run with the database on Neon. Two workflows:
+
+- `pr.yml`: on a pull request into `dev` or `main`, runs ktlint, detekt, the tests, the Android build and lint, hadolint, a Docker build (not pushed) and actionlint. Nothing is published.
+- `publish.yml`: builds the image from the `Dockerfile`, publishes it to Artifact Registry and updates a Cloud Run service. It runs only on a push to `dev` or on a release tag.
+
+| Trigger | Image tags | Cloud Run service |
+|---|---|---|
+| push to `dev` | `<next minor>-dev.<sha>`, e.g. `1.5.0-dev.a1b2c3d` (`0.1.0-dev.<sha>` before the first tag) | staging (`GCP_CLOUD_RUN_SERVICE_DEV`) |
+| tag `v1.4.0` on `main` | `1.4.0` and `latest` | production (`GCP_CLOUD_RUN_SERVICE`) |
+
+To release: merge into `main`, then create the tag on the merged commit (`git tag v1.4.0 && git push origin v1.4.0`, or the GitHub Releases button). A push to `main` without a tag publishes nothing. The workflow refuses a tag that is not on `main`.
+
+Suggested branch protection on `main` and `dev` (Settings → Branches): require a pull request and require the `pr` checks to pass.
 
 > These steps were drafted from the Google Cloud and Neon docs and have **not been run end to end yet**. Expect to adjust a flag or a role the first time.
 
@@ -158,6 +170,8 @@ gcloud run deploy $SERVICE --project $PROJECT_ID --region $REGION \
   --set-secrets DATABASE_PASSWORD=remir-database-password:latest
 ```
 
+Create the staging service the same way (`gcloud run deploy remir-api-dev ...`), pointing it at a Neon **dev branch** of the database and its own secret, so staging never touches production data.
+
 Then, in the GitHub repository (Settings → Secrets and variables → Actions → **Variables**), create:
 
 | Variable | Value |
@@ -165,7 +179,8 @@ Then, in the GitHub repository (Settings → Secrets and variables → Actions �
 | `GCP_PROJECT_ID` | your project id |
 | `GCP_REGION` | `us-central1` |
 | `GCP_ARTIFACT_REPO` | `remir` |
-| `GCP_CLOUD_RUN_SERVICE` | `remir-api` |
+| `GCP_CLOUD_RUN_SERVICE` | `remir-api` (production) |
+| `GCP_CLOUD_RUN_SERVICE_DEV` | `remir-api-dev` (staging) |
 | `GCP_DEPLOYER_SERVICE_ACCOUNT` | `github-deployer@PROJECT_ID.iam.gserviceaccount.com` |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github-provider` |
 

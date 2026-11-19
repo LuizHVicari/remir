@@ -1,0 +1,120 @@
+name: publish
+
+# Publishes the server image and updates Cloud Run. Pull requests are validated by pr.yml and publish nothing.
+#
+#   push to dev    -> image <next minor>-dev.<sha> (e.g. 1.5.0-dev.a1b2c3d) -> staging service
+#   tag v1.4.0     -> image 1.4.0 and latest, tag must be on main          -> production service
+#
+# A push to main without a tag only runs pr.yml's checks through the merged PR; it publishes nothing.
+# One-time Google Cloud setup and the repository variables used below are in the README ("Deploy").
+on:
+  push:
+    branches: [dev]
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  # A newer push to dev replaces a running dev publish; a release is never cancelled.
+  cancel-in-progress: ${{ github.ref_type == 'branch' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      # The server tests start Postgres with Testcontainers; the runner has Docker.
+      - run: ./gradlew :core:test :server:test
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation: no long-lived Google key is stored in GitHub
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # tags and branch history are needed to compute the version
+
+      - name: Compute version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          STAGING_SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE_DEV }}
+          PRODUCTION_SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE }}
+        run: |
+          set -euo pipefail
+          sha7="${GITHUB_SHA::7}"
+          if [ "$REF_TYPE" = "tag" ]; then
+            # A release must come from main, so an arbitrary branch cannot ship to production.
+            git fetch origin main
+            git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+              || { echo "::error::Tag $REF_NAME is not on main"; exit 1; }
+            version="${REF_NAME#v}"
+            tags="$version latest"
+            service="$PRODUCTION_SERVICE"
+          else
+            latest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+            if [ -z "$latest" ]; then
+              next="0.1.0"
+            else
+              IFS=. read -r major minor _ <<< "${latest#v}"
+              next="${major}.$((minor + 1)).0"
+            fi
+            version="${next}-dev.${sha7}"
+            tags="$version"
+            service="$STAGING_SERVICE"
+          fi
+          {
+            echo "version=$version"
+            echo "tags=$tags"
+            echo "service=$service"
+          } >> "$GITHUB_OUTPUT"
+          echo "Publishing $version to ${service:-<service not configured>}"
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SERVICE_ACCOUNT }}
+
+      - name: Image names
+        id: image
+        env:
+          REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REPO }}/remir-server
+          TAGS: ${{ steps.version.outputs.tags }}
+        run: |
+          set -euo pipefail
+          list=""
+          for t in $TAGS; do list="${list}${REGISTRY}:${t}"$'\n'; done
+          {
+            echo "list<<EOF"
+            printf '%s' "$list"
+            echo "EOF"
+            echo "primary=${REGISTRY}:${TAGS%% *}"
+          } >> "$GITHUB_OUTPUT"
+
+      - run: gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.image.outputs.list }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Only swaps the image: environment variables and secrets stay as configured on each service.
+      - uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          service: ${{ steps.version.outputs.service }}
+          region: ${{ vars.GCP_REGION }}
+          image: ${{ steps.image.outputs.primary }}
