@@ -101,10 +101,10 @@ The privacy policy and terms are stored in the database as Markdown and served a
 
 The server decides who is admin from the `metadata.role` claim of the Clerk session token:
 
-1. In the Clerk dashboard, open **Sessions → Customize session token** and add the claim `{ "metadata": "{{user.public_metadata}}" }`.
-2. On your user (Users → your user → Metadata → Public), set `{ "role": "admin" }`.
+1. In the Clerk dashboard, open **Sessions → Customize session token**, and in the **Claims** editor add `{ "metadata": "{{user.public_metadata}}" }`. Do this on each Clerk instance (development and production).
+2. Open **Users**, select your user, and under **User metadata** click **Edit** next to **Public**. Set `{ "role": "admin" }`.
 
-Not yet verified against a real Clerk instance: confirm the exact menu names and claim syntax in Clerk's docs. Without the claim, every admin call answers 403.
+This follows [Clerk's basic RBAC guide](https://clerk.com/docs/guides/secure/basic-rbac). The session token refreshes about every 60 seconds, so a role change can take up to a minute to show up, and custom claims are limited to about 1.2 KB. Without the claim every admin call answers 403. Not yet exercised with a real Clerk token.
 
 ## Database migrations
 
