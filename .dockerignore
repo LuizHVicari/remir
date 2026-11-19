@@ -1,0 +1,13 @@
+# Keep secrets and build output out of the image and the build context.
+.git
+.github
+.idea
+.gradle
+**/build
+.kotlin
+.env
+local.properties
+*.jks
+*.keystore
+docs
+legal

@@ -13,7 +13,7 @@ fun connectDatabase(config: DatabaseConfig): HikariDataSource {
             jdbcUrl = config.jdbcUrl
             username = config.user
             password = config.password
-            maximumPoolSize = 10
+            maximumPoolSize = config.poolSize
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_READ_COMMITTED"
         },

@@ -106,6 +106,83 @@ The server decides who is admin from the `metadata.role` claim of the Clerk sess
 
 This follows [Clerk's basic RBAC guide](https://clerk.com/docs/guides/secure/basic-rbac). The session token refreshes about every 60 seconds, so a role change can take up to a minute to show up, and custom claims are limited to about 1.2 KB. Without the claim every admin call answers 403. Not yet exercised with a real Clerk token.
 
+## Deploy: Cloud Run + Neon
+
+The API runs on Google Cloud Run with the database on Neon. A push to `main` runs the tests, builds the image from the `Dockerfile`, publishes it to Artifact Registry and updates the Cloud Run service (`.github/workflows/server.yml`).
+
+> These steps were drafted from the Google Cloud and Neon docs and have **not been run end to end yet**. Expect to adjust a flag or a role the first time.
+
+### Neon
+
+Create a project and a database. Copy the **direct** (non-pooled) host for the server: Flyway migrations are safer over a direct connection. Neon requires SSL, so set `DATABASE_SSLMODE=require`. Keep `DATABASE_POOL_SIZE` small (for example `5`): each Cloud Run instance opens its own pool and Neon limits connections. The free Neon compute suspends when idle, so the first request after a pause is slower.
+
+### Google Cloud, one time
+
+```bash
+export PROJECT_ID=your-project REGION=us-central1 SERVICE=remir-api REPO=remir
+export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+
+gcloud services enable run.googleapis.com artifactregistry.googleapis.com \
+  secretmanager.googleapis.com iamcredentials.googleapis.com --project $PROJECT_ID
+gcloud artifacts repositories create $REPO --repository-format=docker --location=$REGION --project $PROJECT_ID
+
+# Runtime identity of the service, and the database password as a secret it can read.
+gcloud iam service-accounts create remir-runtime --project $PROJECT_ID
+printf '%s' 'THE_NEON_PASSWORD' | gcloud secrets create remir-database-password --data-file=- --project $PROJECT_ID
+gcloud secrets add-iam-policy-binding remir-database-password --project $PROJECT_ID \
+  --member=serviceAccount:remir-runtime@$PROJECT_ID.iam.gserviceaccount.com --role=roles/secretmanager.secretAccessor
+
+# Identity GitHub Actions uses to deploy (Workload Identity Federation, no stored key).
+gcloud iam service-accounts create github-deployer --project $PROJECT_ID
+DEPLOYER=github-deployer@$PROJECT_ID.iam.gserviceaccount.com
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEPLOYER --role=roles/run.admin
+gcloud artifacts repositories add-iam-policy-binding $REPO --location=$REGION --project $PROJECT_ID \
+  --member=serviceAccount:$DEPLOYER --role=roles/artifactregistry.writer
+gcloud iam service-accounts add-iam-policy-binding remir-runtime@$PROJECT_ID.iam.gserviceaccount.com --project $PROJECT_ID \
+  --member=serviceAccount:$DEPLOYER --role=roles/iam.serviceAccountUser
+
+gcloud iam workload-identity-pools create github --location=global --project $PROJECT_ID
+gcloud iam workload-identity-pools providers create-oidc github-provider --location=global --project $PROJECT_ID \
+  --workload-identity-pool=github --issuer-uri=https://token.actions.githubusercontent.com \
+  --attribute-mapping='google.subject=assertion.sub,attribute.repository=assertion.repository' \
+  --attribute-condition="assertion.repository=='LuizHVicari/remir'"
+gcloud iam service-accounts add-iam-policy-binding $DEPLOYER --project $PROJECT_ID --role=roles/iam.workloadIdentityUser \
+  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/LuizHVicari/remir"
+
+# First deploy with a placeholder image, so the service exists with its configuration. GitHub Actions then only swaps the image.
+gcloud run deploy $SERVICE --project $PROJECT_ID --region $REGION \
+  --image us-docker.pkg.dev/cloudrun/container/hello --allow-unauthenticated \
+  --service-account remir-runtime@$PROJECT_ID.iam.gserviceaccount.com \
+  --memory 512Mi --cpu 1 --cpu-boost --min-instances 0 --max-instances 3 \
+  --set-env-vars DATABASE_HOST=NEON_HOST,DATABASE_PORT=5432,DATABASE_NAME=NEON_DB,DATABASE_USER=NEON_USER,DATABASE_SSLMODE=require,DATABASE_POOL_SIZE=5,CLERK_ISSUER=https://clerk.primo.luizhenriquevicari.dev \
+  --set-secrets DATABASE_PASSWORD=remir-database-password:latest
+```
+
+Then, in the GitHub repository (Settings → Secrets and variables → Actions → **Variables**), create:
+
+| Variable | Value |
+|---|---|
+| `GCP_PROJECT_ID` | your project id |
+| `GCP_REGION` | `us-central1` |
+| `GCP_ARTIFACT_REPO` | `remir` |
+| `GCP_CLOUD_RUN_SERVICE` | `remir-api` |
+| `GCP_DEPLOYER_SERVICE_ACCOUNT` | `github-deployer@PROJECT_ID.iam.gserviceaccount.com` |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github-provider` |
+
+None of these is a secret, so they are variables, not secrets. The database password lives only in Secret Manager.
+
+### Custom domain (`primo.luizhenriquevicari.dev`)
+
+This uses Cloud Run domain mappings, which Google lists as **Preview** and does not recommend for production (latency, no support). If that becomes a problem, the next step is a global external Application Load Balancer, with no code change.
+
+```bash
+gcloud domains verify luizhenriquevicari.dev   # ownership of the base domain, via a TXT record in DNS
+gcloud beta run domain-mappings create --service $SERVICE --domain primo.luizhenriquevicari.dev --region $REGION
+gcloud beta run domain-mappings describe --domain primo.luizhenriquevicari.dev --region $REGION  # shows the DNS records
+```
+
+Add the records Cloud Run shows in Cloudflare as **DNS only** (grey cloud, no proxy) and turn off "Always Use HTTPS" in Cloudflare's Edge Certificates, or the certificate validation can fail. The certificate usually takes about 15 minutes and can take up to 24 hours. The domain mapping works in `us-central1`.
+
 ## Database migrations
 
 Exposed `Table` objects are the schema source of truth:

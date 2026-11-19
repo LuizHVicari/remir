@@ -93,6 +93,7 @@ Code examples for every layer: [examples.md](examples.md).
 **Config and secrets**
 - Server config comes only from env vars; for dev, `:server:run` loads `.env`.
 - Docker values (ports, credentials) come from `.env`; nothing host-specific is hardcoded in `docker-compose.yml`.
+- Production runs on Cloud Run (image from the `Dockerfile`) with Neon as the database; GitHub Actions (`.github/workflows/server.yml`) tests, builds, publishes and deploys on a push to `main`. Managed-Postgres settings are optional env vars: `DATABASE_SSLMODE` (`require` for Neon) and `DATABASE_POOL_SIZE`. The database password lives in Secret Manager, never in the repo or in a workflow. Setup is in the README ("Deploy").
 - `.env`, `local.properties` and keystores are never committed.
 
 **`applicationId = "dev.luizhenriquevicari.remir"`** never changes.
@@ -140,6 +141,8 @@ Code examples for every layer: [examples.md](examples.md).
 | `Unresolved reference 'icons'` | `material3` does not bring the icons: add `compose-material-icons-core` (BOM-managed, no version) to the catalog and the module. |
 | Build fails with `com/android/build/gradle/api/BaseVariant` right after "Configure Kotlin" | Studio injected `kotlin("jvm") version ...`, `jvmToolchain(8)` and `kotlin("test")` into the root and `app/build.gradle.kts`. Remove them: AGP 9 has built-in Kotlin and the toolchain comes from `build-logic`. |
 | `URL(String)` deprecated on JDK 20+ | Use `URI(...).toURL()`. |
+| `docker build` fails configuring `:app` (Android SDK not found) | The `Dockerfile` removes `:app` from `settings.gradle.kts` inside the build stage only. Don't try to install the SDK in the image. |
+| Cloud Run domain mapping | It is **Preview**: Google does not recommend it for production (latency, no support). The next step is a global external Application Load Balancer; the code does not change. Keep the DNS record **DNS only** in Cloudflare. |
 
 ## 6. Commands
 
