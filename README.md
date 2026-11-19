@@ -95,6 +95,17 @@ If one is missing, or the URL is not `https://`, only the release build fails, w
 4. Pick the **app** configuration and an emulator, then click Run.
 5. In the app, sign in through the Clerk screen, open **My profile**, edit the name, then **Sign out**.
 
+## Admin role and legal documents
+
+The privacy policy and terms are stored in the database as Markdown and served as a public page at `/legal/privacy` and `/legal/terms`. Only an admin can publish a new version (`POST /admin/legal-documents/{type}`).
+
+The server decides who is admin from the `metadata.role` claim of the Clerk session token:
+
+1. In the Clerk dashboard, open **Sessions → Customize session token** and add the claim `{ "metadata": "{{user.public_metadata}}" }`.
+2. On your user (Users → your user → Metadata → Public), set `{ "role": "admin" }`.
+
+Not yet verified against a real Clerk instance: confirm the exact menu names and claim syntax in Clerk's docs. Without the claim, every admin call answers 403.
+
 ## Database migrations
 
 Exposed `Table` objects are the schema source of truth:

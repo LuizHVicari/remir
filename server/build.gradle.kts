@@ -17,6 +17,8 @@ dependencies {
     implementation(libs.ktor.server.auth.jwt)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.html.builder)
+    implementation(libs.jetbrains.markdown)
 
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)

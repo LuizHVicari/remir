@@ -38,21 +38,26 @@ object TestJwt {
     /** In-memory equivalent of `$CLERK_ISSUER/.well-known/jwks.json`. */
     val jwkProvider = JwkProvider { kid -> jwk.takeIf { kid == KEY_ID } ?: throw SigningKeyNotFoundException(kid, null) }
 
-    /** Creates a token shaped like Clerk's (`sub` = `user_...`). */
+    /**
+     * Creates a token shaped like Clerk's (`sub` = `user_...`).
+     * [role] goes in the `metadata.role` claim, like the Clerk session token template does.
+     */
     fun token(
         subject: String,
         issuer: String = ISSUER,
         expiresIn: Duration = 5.minutes,
+        role: String? = null,
     ): String {
         val now = Instant.now()
-        return JWT.create()
+        val builder = JWT.create()
             .withKeyId(KEY_ID)
             .withIssuer(issuer)
             .withSubject(subject)
             .withIssuedAt(now)
             .withNotBefore(now)
             .withExpiresAt(now.plus(expiresIn.toJavaDuration()))
-            .sign(Algorithm.RSA256(publicKey, privateKey))
+        role?.let { builder.withClaim("metadata", mapOf("role" to it)) }
+        return builder.sign(Algorithm.RSA256(publicKey, privateKey))
     }
 
     /** Unsigned big-endian bytes, base64url without padding (JWK format). */

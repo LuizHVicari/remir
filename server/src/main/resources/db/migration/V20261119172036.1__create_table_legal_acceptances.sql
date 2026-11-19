@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS legal_acceptances (user_id VARCHAR(64), "type" VARCHAR(20), "version" INT, accepted_at TIMESTAMP NOT NULL, CONSTRAINT pk_legal_acceptances PRIMARY KEY (user_id, "type", "version"), CONSTRAINT fk_legal_acceptances_user_id__id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT);
+CREATE INDEX legal_acceptances_user_id ON legal_acceptances (user_id);

@@ -79,7 +79,9 @@ Code examples for every layer: [examples.md](examples.md).
 
 **User data and auth**
 - Every query filters by `call.userId()`. That is the Clerk `sub`, a `user_...` string, not a UUID. Never trust a user id that comes in a request body.
-- Every API route sits inside `authenticate(CLERK_AUTH)`. The only exception is `GET /health`.
+- Every API route sits inside `authenticate(CLERK_AUTH)`. The only exceptions are `GET /health` and the public legal pages `GET /legal/{type}` (they must open without an account for Google and store review).
+- Admin routes call `call.requireAdmin()`: it reads the token's `metadata.role` claim (`admin`), which comes from the Clerk session token template (see README). Never trust an admin flag sent by the client.
+- Legal documents (privacy policy, terms) live in the database as immutable Markdown versions (`legal_documents`); editing publishes a new version, never an update. User consent is recorded per version in `legal_acceptances`. HTML is produced by walking the Markdown tree into kotlinx.html (`features/legal/MarkdownHtml.kt`), never by concatenating HTML strings.
 - The app fetches the Clerk token on every request through the `ClerkToken` plugin (`HttpClient.kt`). Never use `Auth { bearer { loadTokens } }`, and never store the token.
 
 **App validation**: run the same `core` validator before calling the API. Local errors and `ApiError.fields` share the state's `fieldErrors: Map<String, String>`.

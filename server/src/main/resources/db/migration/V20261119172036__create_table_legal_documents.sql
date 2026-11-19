@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS legal_documents ("type" VARCHAR(20), "version" INT, "content" TEXT NOT NULL, requires_acceptance BOOLEAN NOT NULL, effective_at TIMESTAMP NOT NULL, published_by VARCHAR(64) NOT NULL, CONSTRAINT pk_legal_documents PRIMARY KEY ("type", "version"));

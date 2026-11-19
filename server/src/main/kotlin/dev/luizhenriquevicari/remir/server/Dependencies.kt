@@ -4,6 +4,8 @@ import com.auth0.jwk.JwkProvider
 import com.zaxxer.hikari.HikariDataSource
 import dev.luizhenriquevicari.remir.server.config.AppConfig
 import dev.luizhenriquevicari.remir.server.db.connectDatabase
+import dev.luizhenriquevicari.remir.server.features.legal.LegalRepository
+import dev.luizhenriquevicari.remir.server.features.legal.LegalService
 import dev.luizhenriquevicari.remir.server.features.profile.ProfileRepository
 import dev.luizhenriquevicari.remir.server.features.profile.ProfileService
 import dev.luizhenriquevicari.remir.server.plugins.clerkJwkProvider
@@ -17,7 +19,10 @@ class Dependencies(
     val jwkProvider: JwkProvider,
     private val dataSource: HikariDataSource,
 ) : AutoCloseable {
-    val profileService = ProfileService(ProfileRepository())
+    private val profileRepository = ProfileRepository()
+
+    val profileService = ProfileService(profileRepository)
+    val legalService = LegalService(LegalRepository(), profileRepository)
 
     override fun close() = dataSource.close()
 
