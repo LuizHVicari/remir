@@ -106,97 +106,73 @@ The server decides who is admin from the `metadata.role` claim of the Clerk sess
 
 This follows [Clerk's basic RBAC guide](https://clerk.com/docs/guides/secure/basic-rbac). The session token refreshes about every 60 seconds, so a role change can take up to a minute to show up, and custom claims are limited to about 1.2 KB. Without the claim every admin call answers 403. Not yet exercised with a real Clerk token.
 
-## Deploy: Cloud Run + Neon
+## Deploy: Docker host + Cloudflare Tunnel + Neon
 
-The API runs on Google Cloud Run with the database on Neon. Two workflows:
+The API runs as a Docker container on a host reached over SSH, published through a Cloudflare Tunnel, with the database on Neon. Two workflows:
 
 - `pr.yml`: on a pull request into `dev` or `main`, runs ktlint, detekt, the tests, the Android build and lint, hadolint, a Docker build (not pushed) and actionlint. Nothing is published.
-- `publish.yml`: builds the image from the `Dockerfile`, publishes it to Artifact Registry and updates a Cloud Run service. It runs only on a push to `dev` or on a release tag.
+- `publish.yml`: builds the image from the `Dockerfile`, publishes it to GHCR and deploys it with `deploy/deploy.sh`. It runs only on a push to `dev` or on a release tag.
 
-| Trigger | Image tags | Cloud Run service |
+| Trigger | Image tags | GitHub environment |
 |---|---|---|
-| push to `dev` | `<next minor>-dev.<sha>`, e.g. `1.5.0-dev.a1b2c3d` (`0.1.0-dev.<sha>` before the first tag) | staging (`GCP_CLOUD_RUN_SERVICE_DEV`) |
-| tag `v1.4.0` on `main` | `1.4.0` and `latest` | production (`GCP_CLOUD_RUN_SERVICE`) |
+| push to `dev` | `<next minor>-dev.<sha>`, e.g. `1.5.0-dev.a1b2c3d` (`0.1.0-dev.<sha>` before the first tag) | `dev` |
+| tag `v1.4.0` on `main` | `1.4.0` and `latest` | `prod` |
+
+How a deploy works (`deploy/deploy.sh`, tested locally against Docker, not yet on the real host):
+
+1. CI writes the application settings to `/opt/remir/<env>.env` on the host, readable by root only.
+2. The script pulls the image and starts a new container (`remir-<env>-blue` or `-green`) on the `remir-network` Docker network, with the alias `remir-<env>`.
+3. It waits for `/health`. If the new container does not become healthy, it is removed and the previous one keeps serving.
+4. Once healthy, the previous container is removed. Only the newest 3 Remir images are kept.
+5. A `remir-cloudflared` container, started once from the tunnel token, publishes the hostnames. No port is opened on the host and a reverse proxy is not needed.
+
+The host can be shared with other projects: the script only touches containers, images and the network named `remir-*`, and it logs in to GHCR with its own Docker config. Every container has a memory limit (default `448m`, variable `CONTAINER_MEMORY`), and the JVM sizes its heap from it.
 
 To release: merge into `main`, then create the tag on the merged commit (`git tag v1.4.0 && git push origin v1.4.0`, or the GitHub Releases button). A push to `main` without a tag publishes nothing. The workflow refuses a tag that is not on `main`.
 
 Suggested branch protection on `main` and `dev` (Settings → Branches): require a pull request and require the `pr` checks to pass.
 
-> These steps were drafted from the Google Cloud and Neon docs and have **not been run end to end yet**. Expect to adjust a flag or a role the first time.
+> Drafted from the docs and tested only locally (`deploy/deploy.sh` against Docker, workflows with actionlint). It has **not been run end to end** on the real host yet: expect to adjust a detail the first time.
 
-### Neon
+### One-time setup
 
-Create a project and a database. Copy the **direct** (non-pooled) host for the server: Flyway migrations are safer over a direct connection. Neon requires SSL, so set `DATABASE_SSLMODE=require`. Keep `DATABASE_POOL_SIZE` small (for example `5`): each Cloud Run instance opens its own pool and Neon limits connections. The free Neon compute suspends when idle, so the first request after a pause is slower.
+1. **Neon:** create a branch for each environment (the default branch is production, plus a `dev` branch created while production is still empty, so staging never holds real user data). In the Neon console use **Connect**, pick the branch, and **untick "Pooled connection"**: Flyway migrations are safer over the direct host. Neon requires SSL (the deploy sets `DATABASE_SSLMODE=require`). The free compute suspends after 5 idle minutes, so the first request after a pause is slower.
 
-### Google Cloud, one time
+2. **Deploy key:** make a key used only by this project, and add its public half to `authorized_keys` of the user that runs Docker on the host (a dedicated non-root user in the `docker` group is safer than `root`, but the `docker` group is still root-equivalent):
 
-```bash
-export PROJECT_ID=your-project REGION=us-central1 SERVICE=remir-api REPO=remir
-export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+   ```bash
+   ssh-keygen -t ed25519 -N "" -C remir-deploy -f ~/.ssh/remir_deploy
+   ```
 
-gcloud services enable run.googleapis.com artifactregistry.googleapis.com \
-  secretmanager.googleapis.com iamcredentials.googleapis.com --project $PROJECT_ID
-gcloud artifacts repositories create $REPO --repository-format=docker --location=$REGION --project $PROJECT_ID
+3. **Cloudflare Tunnel:** in the Cloudflare dashboard (Zero Trust → Networks → Tunnels) create a tunnel and copy its token. Add one public hostname per environment, pointing at the container alias: `primo.luizhenriquevicari.dev` → `http://remir-prod:8080` and `primo-dev.luizhenriquevicari.dev` → `http://remir-dev:8080`. Check the exact menu names in Cloudflare's docs.
 
-# Runtime identity of the service, and the database password as a secret it can read.
-gcloud iam service-accounts create remir-runtime --project $PROJECT_ID
-printf '%s' 'THE_NEON_PASSWORD' | gcloud secrets create remir-database-password --data-file=- --project $PROJECT_ID
-gcloud secrets add-iam-policy-binding remir-database-password --project $PROJECT_ID \
-  --member=serviceAccount:remir-runtime@$PROJECT_ID.iam.gserviceaccount.com --role=roles/secretmanager.secretAccessor
+4. **GitHub secrets** (repository level, Settings → Secrets and variables → Actions). They are secrets, not variables, because this repository is public and secrets are masked in its public logs:
 
-# Identity GitHub Actions uses to deploy (Workload Identity Federation, no stored key).
-gcloud iam service-accounts create github-deployer --project $PROJECT_ID
-DEPLOYER=github-deployer@$PROJECT_ID.iam.gserviceaccount.com
-gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEPLOYER --role=roles/run.admin
-gcloud artifacts repositories add-iam-policy-binding $REPO --location=$REGION --project $PROJECT_ID \
-  --member=serviceAccount:$DEPLOYER --role=roles/artifactregistry.writer
-gcloud iam service-accounts add-iam-policy-binding remir-runtime@$PROJECT_ID.iam.gserviceaccount.com --project $PROJECT_ID \
-  --member=serviceAccount:$DEPLOYER --role=roles/iam.serviceAccountUser
+   | Secret | Value |
+   |---|---|
+   | `SSH_HOST` | host name or address of the server |
+   | `SSH_USER` | user that runs Docker |
+   | `SSH_KNOWN_HOSTS` | output of `ssh-keyscan -t ed25519 <host>`, which pins the host key |
+   | `SSH_KEY` | the private key (`~/.ssh/remir_deploy`) |
+   | `CLOUDFLARE_TUNNEL_TOKEN` | the tunnel token |
 
-gcloud iam workload-identity-pools create github --location=global --project $PROJECT_ID
-gcloud iam workload-identity-pools providers create-oidc github-provider --location=global --project $PROJECT_ID \
-  --workload-identity-pool=github --issuer-uri=https://token.actions.githubusercontent.com \
-  --attribute-mapping='google.subject=assertion.sub,attribute.repository=assertion.repository' \
-  --attribute-condition="assertion.repository=='LuizHVicari/remir'"
-gcloud iam service-accounts add-iam-policy-binding $DEPLOYER --project $PROJECT_ID --role=roles/iam.workloadIdentityUser \
-  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/LuizHVicari/remir"
+   ```bash
+   gh secret set SSH_KEY < ~/.ssh/remir_deploy
+   gh secret set CLOUDFLARE_TUNNEL_TOKEN   # paste the token when asked
+   ```
 
-# First deploy with a placeholder image, so the service exists with its configuration. GitHub Actions then only swaps the image.
-gcloud run deploy $SERVICE --project $PROJECT_ID --region $REGION \
-  --image us-docker.pkg.dev/cloudrun/container/hello --allow-unauthenticated \
-  --service-account remir-runtime@$PROJECT_ID.iam.gserviceaccount.com \
-  --memory 512Mi --cpu 1 --cpu-boost --min-instances 0 --max-instances 3 \
-  --set-env-vars DATABASE_HOST=NEON_HOST,DATABASE_PORT=5432,DATABASE_NAME=NEON_DB,DATABASE_USER=NEON_USER,DATABASE_SSLMODE=require,DATABASE_POOL_SIZE=5,CLERK_ISSUER=https://clerk.primo.luizhenriquevicari.dev \
-  --set-secrets DATABASE_PASSWORD=remir-database-password:latest
-```
+5. **GitHub environments** `dev` and `prod` (Settings → Environments), each with its own Neon branch:
 
-Create the staging service the same way (`gcloud run deploy remir-api-dev ...`), pointing it at a Neon **dev branch** of the database and its own secret, so staging never touches production data.
+   | Kind | Name | Value |
+   |---|---|---|
+   | variable | `DATABASE_HOST`, `DATABASE_NAME`, `DATABASE_USER` | from the Neon branch (direct host) |
+   | secret | `DATABASE_PASSWORD` | from the Neon branch |
+   | variable | `CLERK_ISSUER` | Clerk Frontend API URL of that environment |
+   | variable (optional) | `DATABASE_PORT`, `DATABASE_POOL_SIZE`, `CONTAINER_MEMORY` | defaults `5432`, `3`, `448m` |
 
-Then, in the GitHub repository (Settings → Secrets and variables → Actions → **Variables**), create:
+   Consider a required reviewer on the `prod` environment, so a release waits for an approval.
 
-| Variable | Value |
-|---|---|
-| `GCP_PROJECT_ID` | your project id |
-| `GCP_REGION` | `us-central1` |
-| `GCP_ARTIFACT_REPO` | `remir` |
-| `GCP_CLOUD_RUN_SERVICE` | `remir-api` (production) |
-| `GCP_CLOUD_RUN_SERVICE_DEV` | `remir-api-dev` (staging) |
-| `GCP_DEPLOYER_SERVICE_ACCOUNT` | `github-deployer@PROJECT_ID.iam.gserviceaccount.com` |
-| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github-provider` |
-
-None of these is a secret, so they are variables, not secrets. The database password lives only in Secret Manager.
-
-### Custom domain (`primo.luizhenriquevicari.dev`)
-
-This uses Cloud Run domain mappings, which Google lists as **Preview** and does not recommend for production (latency, no support). If that becomes a problem, the next step is a global external Application Load Balancer, with no code change.
-
-```bash
-gcloud domains verify luizhenriquevicari.dev   # ownership of the base domain, via a TXT record in DNS
-gcloud beta run domain-mappings create --service $SERVICE --domain primo.luizhenriquevicari.dev --region $REGION
-gcloud beta run domain-mappings describe --domain primo.luizhenriquevicari.dev --region $REGION  # shows the DNS records
-```
-
-Add the records Cloud Run shows in Cloudflare as **DNS only** (grey cloud, no proxy) and turn off "Always Use HTTPS" in Cloudflare's Edge Certificates, or the certificate validation can fail. The certificate usually takes about 15 minutes and can take up to 24 hours. The domain mapping works in `us-central1`.
+6. Create the `dev` branch and push to it: that runs the first deploy.
 
 ## Database migrations
 

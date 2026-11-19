@@ -46,7 +46,7 @@ private const val DEFAULT_POOL_SIZE = 10
 /**
  * @property sslMode Postgres `sslmode` (e.g. `require` for Neon). Null leaves it out, which is what local dev uses.
  * @property poolSize Max connections per server instance. Keep it small on managed Postgres with a connection
- * limit, because each Cloud Run instance opens its own pool.
+ * limit, because each running server instance opens its own pool.
  */
 data class DatabaseConfig(
     val host: String,

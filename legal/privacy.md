@@ -22,7 +22,8 @@ I use these providers to run the service. They process data only to provide thei
 
 - **Clerk**, for authentication and user accounts. Clerk acts as a processor on my behalf. See [Clerk's privacy policy](https://clerk.com/legal/privacy).
 - **Google**, only if you choose to sign in with Google. See [Google's privacy policy](https://policies.google.com/privacy).
-- **Google Cloud**, which hosts the API.
+- **Hostinger**, which hosts the server that runs the API.
+- **Cloudflare**, which routes requests to the server and therefore sees them in transit (including IP addresses).
 - **Neon**, which hosts the database.
 
 If paid plans are introduced, payments will be handled by a third-party payment provider, and I will update this policy before that happens. I do not share your data with anyone else, except when required by law.

@@ -1,12 +1,12 @@
 name: publish
 
-# Publishes the server image and updates Cloud Run. Pull requests are validated by pr.yml and publish nothing.
+# Publishes the server image to GHCR and deploys it to the Docker host over SSH (blue-green, see deploy/deploy.sh).
+# Pull requests are validated by pr.yml and publish nothing.
 #
-#   push to dev    -> image <next minor>-dev.<sha> (e.g. 1.5.0-dev.a1b2c3d) -> staging service
-#   tag v1.4.0     -> image 1.4.0 and latest, tag must be on main          -> production service
+#   push to dev    -> image <next minor>-dev.<sha> (e.g. 1.5.0-dev.a1b2c3d) -> "dev" environment
+#   tag v1.4.0     -> image 1.4.0 and latest, tag must be on main          -> "prod" environment
 #
-# A push to main without a tag only runs pr.yml's checks through the merged PR; it publishes nothing.
-# One-time Google Cloud setup and the repository variables used below are in the README ("Deploy").
+# A push to main without a tag publishes nothing. Variables and secrets are listed in the README ("Deploy").
 on:
   push:
     branches: [dev]
@@ -38,7 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # Workload Identity Federation: no long-lived Google key is stored in GitHub
+      packages: write
+    outputs:
+      environment: ${{ steps.version.outputs.environment }}
+      image: ${{ steps.version.outputs.image }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,19 +52,19 @@ jobs:
         env:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
-          STAGING_SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE_DEV }}
-          PRODUCTION_SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE }}
+          OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
           sha7="${GITHUB_SHA::7}"
+          repo="ghcr.io/${OWNER,,}/remir-server"
           if [ "$REF_TYPE" = "tag" ]; then
             # A release must come from main, so an arbitrary branch cannot ship to production.
             git fetch origin main
             git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
               || { echo "::error::Tag $REF_NAME is not on main"; exit 1; }
             version="${REF_NAME#v}"
-            tags="$version latest"
-            service="$PRODUCTION_SERVICE"
+            tags="${repo}:${version}"$'\n'"${repo}:latest"
+            environment="prod"
           else
             latest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
             if [ -z "$latest" ]; then
@@ -71,50 +74,99 @@ jobs:
               next="${major}.$((minor + 1)).0"
             fi
             version="${next}-dev.${sha7}"
-            tags="$version"
-            service="$STAGING_SERVICE"
+            tags="${repo}:${version}"
+            environment="dev"
           fi
           {
-            echo "version=$version"
-            echo "tags=$tags"
-            echo "service=$service"
-          } >> "$GITHUB_OUTPUT"
-          echo "Publishing $version to ${service:-<service not configured>}"
-
-      - uses: google-github-actions/auth@v3
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_DEPLOYER_SERVICE_ACCOUNT }}
-
-      - name: Image names
-        id: image
-        env:
-          REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REPO }}/remir-server
-          TAGS: ${{ steps.version.outputs.tags }}
-        run: |
-          set -euo pipefail
-          list=""
-          for t in $TAGS; do list="${list}${REGISTRY}:${t}"$'\n'; done
-          {
-            echo "list<<EOF"
-            printf '%s' "$list"
+            echo "environment=$environment"
+            echo "image=${repo}:${version}"
+            echo "tags<<EOF"
+            echo "$tags"
             echo "EOF"
-            echo "primary=${REGISTRY}:${TAGS%% *}"
           } >> "$GITHUB_OUTPUT"
+          echo "Publishing ${repo}:${version} to the ${environment} environment"
 
-      - run: gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ steps.image.outputs.list }}
+          tags: ${{ steps.version.outputs.tags }}
+          # Links the package to this repository, so it inherits the repository's permissions.
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Only swaps the image: environment variables and secrets stay as configured on each service.
-      - uses: google-github-actions/deploy-cloudrun@v3
-        with:
-          service: ${{ steps.version.outputs.service }}
-          region: ${{ vars.GCP_REGION }}
-          image: ${{ steps.image.outputs.primary }}
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    # Each environment (dev, prod) holds its own database settings and secrets.
+    environment: ${{ needs.publish.outputs.environment }}
+    permissions:
+      contents: read
+      packages: read # the token below is used on the server to pull the image
+    env:
+      ENVIRONMENT: ${{ needs.publish.outputs.environment }}
+      IMAGE: ${{ needs.publish.outputs.image }}
+      # Secrets, not variables: this repository is public, and secrets are masked in the public logs.
+      TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The host key is pinned, so the first connection is not trusted blindly.
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Send application settings
+        env:
+          DATABASE_HOST: ${{ vars.DATABASE_HOST }}
+          DATABASE_PORT: ${{ vars.DATABASE_PORT || '5432' }}
+          DATABASE_NAME: ${{ vars.DATABASE_NAME }}
+          DATABASE_USER: ${{ vars.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_POOL_SIZE: ${{ vars.DATABASE_POOL_SIZE || '3' }}
+          CLERK_ISSUER: ${{ vars.CLERK_ISSUER }}
+        run: |
+          set -euo pipefail
+          # Written to a file readable by root only; the secrets never appear in a command line.
+          {
+            echo "PORT=8080"
+            echo "DATABASE_HOST=$DATABASE_HOST"
+            echo "DATABASE_PORT=$DATABASE_PORT"
+            echo "DATABASE_NAME=$DATABASE_NAME"
+            echo "DATABASE_USER=$DATABASE_USER"
+            echo "DATABASE_PASSWORD=$DATABASE_PASSWORD"
+            echo "DATABASE_SSLMODE=require"
+            echo "DATABASE_POOL_SIZE=$DATABASE_POOL_SIZE"
+            echo "CLERK_ISSUER=$CLERK_ISSUER"
+          } | ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$TARGET" \
+            "umask 077 && mkdir -p /opt/remir && cat > /opt/remir/${ENVIRONMENT}.env"
+
+      - name: Deploy
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          MEMORY: ${{ vars.CONTAINER_MEMORY || '448m' }}
+        run: |
+          set -euo pipefail
+          # The tokens travel on stdin, ahead of the script, so they never appear in a process list.
+          {
+            printf 'export ENVIRONMENT=%q IMAGE=%q ENV_FILE=%q MEMORY=%q\n' \
+              "$ENVIRONMENT" "$IMAGE" "/opt/remir/${ENVIRONMENT}.env" "$MEMORY"
+            printf 'export GHCR_USER=%q GHCR_TOKEN=%q TUNNEL_TOKEN=%q\n' \
+              "$GITHUB_ACTOR" "$GHCR_TOKEN" "$TUNNEL_TOKEN"
+            cat deploy/deploy.sh
+          } | ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$TARGET" bash -s

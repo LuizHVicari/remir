@@ -93,7 +93,7 @@ Code examples for every layer: [examples.md](examples.md).
 **Config and secrets**
 - Server config comes only from env vars; for dev, `:server:run` loads `.env`.
 - Docker values (ports, credentials) come from `.env`; nothing host-specific is hardcoded in `docker-compose.yml`.
-- Production runs on Cloud Run (image from the `Dockerfile`) with Neon as the database; GitHub Actions (`.github/workflows/server.yml`) tests, builds, publishes and deploys on a push to `main`. Managed-Postgres settings are optional env vars: `DATABASE_SSLMODE` (`require` for Neon) and `DATABASE_POOL_SIZE`. The database password lives in Secret Manager, never in the repo or in a workflow. Setup is in the README ("Deploy").
+- The server runs as a Docker container (image from the `Dockerfile`, published to GHCR) on a shared host reached over SSH, published through a Cloudflare Tunnel, with Neon as the database. `.github/workflows/publish.yml` deploys on a push to `dev` (environment `dev`) or on a `vX.Y.Z` tag on `main` (environment `prod`), using `deploy/deploy.sh` (blue-green). Managed-Postgres settings are optional env vars: `DATABASE_SSLMODE` (`require` for Neon) and `DATABASE_POOL_SIZE`. Database passwords and the SSH key live in GitHub secrets, never in the repo. SSH host and user are secrets too, because the repository and its logs are public. `deploy/deploy.sh` may only touch containers, images and the network named `remir-*`, since the host is shared. Setup is in the README ("Deploy").
 - `.env`, `local.properties` and keystores are never committed.
 
 **`applicationId = "dev.luizhenriquevicari.remir"`** never changes.
@@ -144,7 +144,8 @@ Code examples for every layer: [examples.md](examples.md).
 | Build fails with `com/android/build/gradle/api/BaseVariant` right after "Configure Kotlin" | Studio injected `kotlin("jvm") version ...`, `jvmToolchain(8)` and `kotlin("test")` into the root and `app/build.gradle.kts`. Remove them: AGP 9 has built-in Kotlin and the toolchain comes from `build-logic`. |
 | `URL(String)` deprecated on JDK 20+ | Use `URI(...).toURL()`. |
 | `docker build` fails configuring `:app` (Android SDK not found) | The `Dockerfile` removes `:app` from `settings.gradle.kts` inside the build stage only. Don't try to install the SDK in the image. |
-| Cloud Run domain mapping | It is **Preview**: Google does not recommend it for production (latency, no support). The next step is a global external Application Load Balancer; the code does not change. Keep the DNS record **DNS only** in Cloudflare. |
+| Deploy fails with `Permission denied (publickey)` | The public half of the deploy key is not in `authorized_keys` of `SSH_USER` on the host, or `SSH_KEY` holds a different key. Test with `ssh -i ~/.ssh/remir_deploy -o IdentitiesOnly=yes user@host true`. |
+| Shell output vanishes when piped (`cmd \| tail`) in this environment | Redirect to a file and read it (`cmd > /tmp/out 2>&1; cat /tmp/out`). Also `git status` can come back empty: use `git ls-files -m` and `git ls-files -o --exclude-standard`. |
 
 ## 6. Commands
 
