@@ -1,6 +1,7 @@
 name: publish
 
-# Publishes the server image to GHCR and deploys it to the Docker host over SSH (blue-green, see deploy/deploy.sh).
+# Publishes the server image to GHCR and deploys it to the Docker host over SSH (blue-green behind Traefik,
+# see deploy/deploy.sh).
 # Pull requests are validated by pr.yml and publish nothing.
 #
 #   push to dev    -> image <next minor>-dev.<sha> (e.g. 1.5.0-dev.a1b2c3d) -> "dev" environment
@@ -158,15 +159,16 @@ jobs:
       - name: Deploy
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          DOMAIN: ${{ vars.DOMAIN }}
+          # Empty behind Cloudflare's proxy; `le` when the record is DNS only (see the README).
+          CERT_RESOLVER: ${{ vars.CERT_RESOLVER }}
           MEMORY: ${{ vars.CONTAINER_MEMORY || '448m' }}
         run: |
           set -euo pipefail
-          # The tokens travel on stdin, ahead of the script, so they never appear in a process list.
+          # The token travels on stdin, ahead of the script, so it never appears in a process list.
           {
-            printf 'export ENVIRONMENT=%q IMAGE=%q ENV_FILE=%q MEMORY=%q\n' \
-              "$ENVIRONMENT" "$IMAGE" "/opt/remir/${ENVIRONMENT}.env" "$MEMORY"
-            printf 'export GHCR_USER=%q GHCR_TOKEN=%q TUNNEL_TOKEN=%q\n' \
-              "$GITHUB_ACTOR" "$GHCR_TOKEN" "$TUNNEL_TOKEN"
+            printf 'export ENVIRONMENT=%q IMAGE=%q ENV_FILE=%q DOMAIN=%q CERT_RESOLVER=%q MEMORY=%q\n' \
+              "$ENVIRONMENT" "$IMAGE" "/opt/remir/${ENVIRONMENT}.env" "$DOMAIN" "$CERT_RESOLVER" "$MEMORY"
+            printf 'export GHCR_USER=%q GHCR_TOKEN=%q\n' "$GITHUB_ACTOR" "$GHCR_TOKEN"
             cat deploy/deploy.sh
           } | ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$TARGET" bash -s

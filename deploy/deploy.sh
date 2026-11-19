@@ -1,27 +1,33 @@
 #!/usr/bin/env bash
-# Blue-green deploy of the Remir server on a Docker host. Runs ON the server (CI streams it over SSH).
-# It never touches containers or images that do not belong to Remir.
+# Blue-green deploy of the Remir server on a Docker host that already runs Traefik. Runs ON the server (CI streams
+# it over SSH). It never touches containers or images that do not belong to Remir.
 #
 # Required environment:
 #   ENVIRONMENT   dev | prod
 #   IMAGE         full image reference, e.g. ghcr.io/luizhvicari/remir-server:1.5.0-dev.a1b2c3d
 #   ENV_FILE      path of the env file holding the application settings (DATABASE_*, CLERK_ISSUER, ...)
+#   DOMAIN        host name Traefik routes to this environment, e.g. primo.luizhenriquevicari.dev
 # Optional:
 #   GHCR_USER, GHCR_TOKEN   log in to ghcr.io before pulling
-#   TUNNEL_TOKEN            Cloudflare Tunnel token; starts the remir-cloudflared container when it is not running
+#   TRAEFIK_NETWORK         Docker network Traefik watches (default proxy); it must already exist
+#   CERT_RESOLVER           Traefik certificate resolver for the router. Leave empty behind Cloudflare's proxy,
+#                           where the ACME TLS challenge cannot pass; set it when the record is DNS only.
 #   MEMORY                  container memory limit (default 448m)
 #   KEEP_IMAGES             how many Remir images to keep on the host (default 3)
 #   HEALTH_TIMEOUT_SECONDS  how long to wait for the new container to be healthy (default 120)
+#   DRAIN_SECONDS           how long Traefik gets to stop routing to the old container before it is stopped (default 3)
 set -euo pipefail
 
 : "${ENVIRONMENT:?ENVIRONMENT must be dev or prod}"
 : "${IMAGE:?IMAGE is required}"
 : "${ENV_FILE:?ENV_FILE is required}"
+: "${DOMAIN:?DOMAIN is required}"
 case "$ENVIRONMENT" in dev | prod) ;; *) echo "ENVIRONMENT must be dev or prod, got '$ENVIRONMENT'" >&2; exit 2 ;; esac
 
 MEMORY="${MEMORY:-448m}"
 KEEP_IMAGES="${KEEP_IMAGES:-3}"
-NETWORK="remir-network"
+NETWORK="${TRAEFIK_NETWORK:-proxy}"
+CERT_RESOLVER="${CERT_RESOLVER:-}"
 PREFIX="remir-${ENVIRONMENT}"
 IMAGE_REPO="${IMAGE%:*}"
 HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-120}"
@@ -38,14 +44,17 @@ if [ -n "${GHCR_TOKEN:-}" ]; then
   echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_USER:-token}" --password-stdin >/dev/null
 fi
 
+# The network belongs to Traefik and to the other projects: only check it, never create or change it.
+docker network inspect "$NETWORK" >/dev/null 2>&1 || {
+  echo "Docker network '$NETWORK' does not exist. Is Traefik set up on this host?" >&2
+  exit 1
+}
+
 # Tags are versions (or version plus commit), so an image that is already on the host is the right one.
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   log "pulling $IMAGE"
   docker pull "$IMAGE" >/dev/null
 fi
-
-# One network for every Remir container and the tunnel, so they reach each other by name.
-docker network inspect "$NETWORK" >/dev/null 2>&1 || docker network create "$NETWORK" >/dev/null
 
 if running "${PREFIX}-blue"; then
   CURRENT=blue NEXT=green
@@ -60,11 +69,21 @@ log "current: ${CURRENT}, starting: ${NEW}"
 
 docker rm -f "$NEW" >/dev/null 2>&1 || true
 
-# The alias is the stable name the tunnel points at; during the overlap both containers answer to it.
+# Both colors declare the same router and service names, so Traefik merges them into one service. Traefik only
+# routes to containers whose Docker health check passes, so the new one receives traffic once it is healthy.
+labels=(
+  -l "traefik.enable=true"
+  -l "traefik.http.routers.${PREFIX}.rule=Host(\`${DOMAIN}\`)"
+  -l "traefik.http.routers.${PREFIX}.entrypoints=websecure"
+  -l "traefik.http.services.${PREFIX}.loadbalancer.server.port=8080"
+)
+if [ -n "$CERT_RESOLVER" ]; then
+  labels+=(-l "traefik.http.routers.${PREFIX}.tls.certresolver=${CERT_RESOLVER}")
+fi
+
 docker run -d \
   --name "$NEW" \
   --network "$NETWORK" \
-  --network-alias "${PREFIX}" \
   --env-file "$ENV_FILE" \
   --memory "$MEMORY" \
   --memory-swap "$MEMORY" \
@@ -74,6 +93,7 @@ docker run -d \
   --health-timeout 3s \
   --health-retries 3 \
   --health-start-period 20s \
+  "${labels[@]}" \
   "$IMAGE" >/dev/null
 
 log "waiting for ${NEW} to become healthy (up to ${HEALTH_TIMEOUT_SECONDS}s)"
@@ -97,20 +117,13 @@ done
 log "${NEW} is healthy"
 
 if [ "$CURRENT" != none ]; then
+  # Take the old container out of Traefik's network first, so no request is routed to it while it shuts down.
+  log "draining ${OLD}"
+  docker network disconnect "$NETWORK" "$OLD" >/dev/null 2>&1 || true
+  sleep "${DRAIN_SECONDS:-3}"
   log "removing ${OLD}"
+  docker stop -t 20 "$OLD" >/dev/null 2>&1 || true
   docker rm -f "$OLD" >/dev/null 2>&1 || true
-fi
-
-if [ -n "${TUNNEL_TOKEN:-}" ] && ! running remir-cloudflared; then
-  log "starting remir-cloudflared"
-  docker rm -f remir-cloudflared >/dev/null 2>&1 || true
-  docker run -d \
-    --name remir-cloudflared \
-    --network "$NETWORK" \
-    --restart unless-stopped \
-    --memory 128m \
-    -e TUNNEL_TOKEN="$TUNNEL_TOKEN" \
-    cloudflare/cloudflared:latest tunnel --no-autoupdate run >/dev/null
 fi
 
 # Keep the newest images of Remir only: other projects' images are never listed here.
@@ -123,4 +136,4 @@ docker images "$IMAGE_REPO" --format '{{.Repository}}:{{.Tag}}' \
     fi
   done
 
-log "done: ${IMAGE} is live as ${NEW}"
+log "done: ${IMAGE} is live as ${NEW} at https://${DOMAIN}"

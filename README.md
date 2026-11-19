@@ -106,9 +106,9 @@ The server decides who is admin from the `metadata.role` claim of the Clerk sess
 
 This follows [Clerk's basic RBAC guide](https://clerk.com/docs/guides/secure/basic-rbac). The session token refreshes about every 60 seconds, so a role change can take up to a minute to show up, and custom claims are limited to about 1.2 KB. Without the claim every admin call answers 403. Not yet exercised with a real Clerk token.
 
-## Deploy: Docker host + Cloudflare Tunnel + Neon
+## Deploy: Docker host + Traefik + Cloudflare + Neon
 
-The API runs as a Docker container on a host reached over SSH, published through a Cloudflare Tunnel, with the database on Neon. Two workflows:
+The API runs as a Docker container on a host reached over SSH, routed by the Traefik that already runs there, behind Cloudflare's proxy, with the database on Neon. Two workflows:
 
 - `pr.yml`: on a pull request into `dev` or `main`, runs ktlint, detekt, the tests, the Android build and lint, hadolint, a Docker build (not pushed) and actionlint. Nothing is published.
 - `publish.yml`: builds the image from the `Dockerfile`, publishes it to GHCR and deploys it with `deploy/deploy.sh`. It runs only on a push to `dev` or on a release tag.
@@ -121,12 +121,13 @@ The API runs as a Docker container on a host reached over SSH, published through
 How a deploy works (`deploy/deploy.sh`, tested locally against Docker, not yet on the real host):
 
 1. CI writes the application settings to `/opt/remir/<env>.env` on the host, readable by root only.
-2. The script pulls the image and starts a new container (`remir-<env>-blue` or `-green`) on the `remir-network` Docker network, with the alias `remir-<env>`.
+2. The script pulls the image and starts a new container (`remir-<env>-blue` or `-green`) on Traefik's Docker network (`proxy`), with Traefik labels for the environment's `DOMAIN`. Both colors use the same router and service names, so Traefik merges them, and it only routes to a container once its health check passes.
 3. It waits for `/health`. If the new container does not become healthy, it is removed and the previous one keeps serving.
-4. Once healthy, the previous container is removed. Only the newest 3 Remir images are kept.
-5. A `remir-cloudflared` container, started once from the tunnel token, publishes the hostnames. No port is opened on the host and a reverse proxy is not needed.
+4. Once healthy, the previous container is taken off Traefik's network, given a few seconds to drain, and then stopped and removed. Only the newest 3 Remir images are kept.
 
-The host can be shared with other projects: the script only touches containers, images and the network named `remir-*`, and it logs in to GHCR with its own Docker config. Every container has a memory limit (default `448m`, variable `CONTAINER_MEMORY`), and the JVM sizes its heap from it.
+Measured locally against a real Traefik (v3.6, 90 requests per swap, three swaps): no error responses during a swap, but **one request per swap stalled until the client timeout (5 s)**, always at the moment the new container becomes routable. The cause was not identified. Before charging users, watch a real deploy on the host and decide if that needs a fix, for example a retry middleware.
+
+The host can be shared with other projects: the script only creates and removes containers and images named `remir-*`, it only checks that the `proxy` network exists, and it logs in to GHCR with its own Docker config. Every container has a memory limit (default `448m`, variable `CONTAINER_MEMORY`), and the JVM sizes its heap from it.
 
 To release: merge into `main`, then create the tag on the merged commit (`git tag v1.4.0 && git push origin v1.4.0`, or the GitHub Releases button). A push to `main` without a tag publishes nothing. The workflow refuses a tag that is not on `main`.
 
@@ -144,7 +145,7 @@ Suggested branch protection on `main` and `dev` (Settings → Branches): require
    ssh-keygen -t ed25519 -N "" -C remir-deploy -f ~/.ssh/remir_deploy
    ```
 
-3. **Cloudflare Tunnel:** in the Cloudflare dashboard (Zero Trust → Networks → Tunnels) create a tunnel and copy its token. Add one public hostname per environment, pointing at the container alias: `primo.luizhenriquevicari.dev` → `http://remir-prod:8080` and `primo-dev.luizhenriquevicari.dev` → `http://remir-dev:8080`. Check the exact menu names in Cloudflare's docs.
+3. **DNS and Traefik:** the host must run Traefik with the Docker provider on a `proxy` network and an `websecure` entrypoint (`docker ps` should show it; if it is stopped, `docker start traefik`, and give it `--restart unless-stopped` so a reboot does not leave it down). In Cloudflare create one `A` record per environment pointing at the host, proxied (orange cloud): `primo.luizhenriquevicari.dev` for `prod` and `primo-dev.luizhenriquevicari.dev` for `dev`. Set the zone's SSL/TLS mode to **Full**. Traefik's `le` resolver uses the TLS challenge, which cannot pass through Cloudflare's proxy, so the deploy leaves `CERT_RESOLVER` empty and Traefik serves its default certificate, which Cloudflare accepts in *Full* mode but does not validate. For a validated origin, use *Full (strict)* with a Cloudflare Origin CA certificate loaded in Traefik, or keep the record DNS only and set `CERT_RESOLVER=le`.
 
 4. **GitHub secrets** (repository level, Settings → Secrets and variables → Actions). They are secrets, not variables, because this repository is public and secrets are masked in its public logs:
 
@@ -154,11 +155,9 @@ Suggested branch protection on `main` and `dev` (Settings → Branches): require
    | `SSH_USER` | user that runs Docker |
    | `SSH_KNOWN_HOSTS` | output of `ssh-keyscan -t ed25519 <host>`, which pins the host key |
    | `SSH_KEY` | the private key (`~/.ssh/remir_deploy`) |
-   | `CLOUDFLARE_TUNNEL_TOKEN` | the tunnel token |
 
    ```bash
    gh secret set SSH_KEY < ~/.ssh/remir_deploy
-   gh secret set CLOUDFLARE_TUNNEL_TOKEN   # paste the token when asked
    ```
 
 5. **GitHub environments** `dev` and `prod` (Settings → Environments), each with its own Neon branch:
@@ -168,7 +167,8 @@ Suggested branch protection on `main` and `dev` (Settings → Branches): require
    | variable | `DATABASE_HOST`, `DATABASE_NAME`, `DATABASE_USER` | from the Neon branch (direct host) |
    | secret | `DATABASE_PASSWORD` | from the Neon branch |
    | variable | `CLERK_ISSUER` | Clerk Frontend API URL of that environment |
-   | variable (optional) | `DATABASE_PORT`, `DATABASE_POOL_SIZE`, `CONTAINER_MEMORY` | defaults `5432`, `3`, `448m` |
+   | variable | `DOMAIN` | host name routed to this environment (`primo.luizhenriquevicari.dev` or `primo-dev.luizhenriquevicari.dev`) |
+   | variable (optional) | `DATABASE_PORT`, `DATABASE_POOL_SIZE`, `CONTAINER_MEMORY`, `CERT_RESOLVER` | defaults `5432`, `3`, `448m`, empty |
 
    Consider a required reviewer on the `prod` environment, so a release waits for an approval.
 
