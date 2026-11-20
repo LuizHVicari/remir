@@ -17,5 +17,8 @@ local.properties
 *.jks
 *.keystore
 
+# Personal helper scripts (kept on the author's machine only)
+scripts/
+
 # OS
 .DS_Store
