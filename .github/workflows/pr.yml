@@ -1,6 +1,7 @@
 name: pr
 
 # Validates pull requests into dev and main. Nothing is published here: no image, no deploy.
+# Every check runs in parallel; the reusable workflows (_*.yml) hold the actual steps.
 on:
   pull_request:
     branches: [dev, main]
@@ -13,109 +14,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    # Lets each job below skip itself when the PR does not touch what it checks.
-    runs-on: ubuntu-latest
-    outputs:
-      kotlin: ${{ steps.filter.outputs.kotlin }}
-      app: ${{ steps.filter.outputs.app }}
-      docker: ${{ steps.filter.outputs.docker }}
-      workflows: ${{ steps.filter.outputs.workflows }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            kotlin:
-              - 'core/**'
-              - 'server/**'
-              - 'app/**'
-              - 'build-logic/**'
-              - 'gradle/**'
-              - 'config/**'
-              - '*.gradle.kts'
-              - 'gradle.properties'
-              - '.editorconfig'
-            app:
-              - 'app/**'
-              - 'core/**'
-              - 'build-logic/**'
-              - 'gradle/**'
-              - '*.gradle.kts'
-            docker:
-              - 'Dockerfile'
-              - '.dockerignore'
-              - 'server/**'
-              - 'core/**'
-              - 'build-logic/**'
-              - 'gradle/**'
-            workflows:
-              - '.github/workflows/**'
+  lint:
+    uses: ./.github/workflows/_lint.yml
 
-  # Fast checks first: formatting and static analysis need no database and no Android SDK.
-  lint-kotlin:
-    needs: changes
-    if: needs.changes.outputs.kotlin == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-      - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew ktlintCheck detekt
-
-  test-server:
-    needs: changes
-    if: needs.changes.outputs.kotlin == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-      - uses: gradle/actions/setup-gradle@v4
-      # Testcontainers starts Postgres; the runner has Docker.
-      - run: ./gradlew :core:test :server:test
+  test:
+    uses: ./.github/workflows/_test.yml
 
   android:
-    needs: changes
-    if: needs.changes.outputs.app == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-      - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew :app:assembleDebug :app:lintDebug
+    uses: ./.github/workflows/_android.yml
 
   docker:
-    needs: changes
-    if: needs.changes.outputs.docker == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: Dockerfile
-      - uses: docker/setup-buildx-action@v3
-      # Builds without pushing, so a broken Dockerfile is caught before it reaches dev or main.
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  actionlint:
-    needs: changes
-    if: needs.changes.outputs.workflows == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: raven-actions/actionlint@v2
+    # Builds without pushing, so a broken Dockerfile is caught before it reaches dev or main.
+    uses: ./.github/workflows/_docker.yml
+    with:
+      push: false

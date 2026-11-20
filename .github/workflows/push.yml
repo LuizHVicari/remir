@@ -1,0 +1,106 @@
+name: push
+
+# Publishes the server image to GHCR and deploys it (see deploy/deploy.sh). Pull requests are validated by pr.yml.
+#
+#   push to dev    -> image <next minor>-dev.<sha> (e.g. 1.5.0-dev.a1b2c3d) -> "dev" environment
+#   tag v1.4.0     -> image 1.4.0 and latest, tag must be on main          -> "prod" environment
+#
+# A push to main without a tag publishes nothing. The same checks as in pr.yml run first, in parallel, and the
+# image is only published when all of them pass. Variables and secrets are listed in the README ("Deploy").
+on:
+  push:
+    branches: [dev]
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: push-${{ github.ref }}
+  # A newer push to dev replaces a running dev run; a release is never cancelled.
+  cancel-in-progress: ${{ github.ref_type == 'branch' }}
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.version.outputs.environment }}
+      image: ${{ steps.version.outputs.image }}
+      tags: ${{ steps.version.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # tags and branch history are needed to compute the version
+
+      - name: Compute version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          sha7="${GITHUB_SHA::7}"
+          repo="ghcr.io/${OWNER,,}/remir-server"
+          if [ "$REF_TYPE" = "tag" ]; then
+            # A release must come from main, so an arbitrary branch cannot ship to production.
+            git fetch origin main
+            git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+              || { echo "::error::Tag $REF_NAME is not on main"; exit 1; }
+            version="${REF_NAME#v}"
+            tags="${repo}:${version}"$'\n'"${repo}:latest"
+            environment="prod"
+          else
+            latest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+            if [ -z "$latest" ]; then
+              next="0.1.0"
+            else
+              IFS=. read -r major minor _ <<< "${latest#v}"
+              next="${major}.$((minor + 1)).0"
+            fi
+            version="${next}-dev.${sha7}"
+            tags="${repo}:${version}"
+            environment="dev"
+          fi
+          {
+            echo "environment=$environment"
+            echo "image=${repo}:${version}"
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "Publishing ${repo}:${version} to the ${environment} environment"
+
+  # The gates wait for `version` only so a tag that is not on main fails fast, before any build starts.
+  lint:
+    needs: version
+    uses: ./.github/workflows/_lint.yml
+
+  test:
+    needs: version
+    uses: ./.github/workflows/_test.yml
+
+  android:
+    needs: version
+    uses: ./.github/workflows/_android.yml
+
+  publish:
+    needs: [version, lint, test, android]
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_docker.yml
+    with:
+      push: true
+      tags: ${{ needs.version.outputs.tags }}
+
+  deploy:
+    needs: [version, publish]
+    permissions:
+      contents: read
+      packages: read # the token is used on the server to pull the image
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      environment: ${{ needs.version.outputs.environment }}
+      image: ${{ needs.version.outputs.image }}
+    secrets: inherit

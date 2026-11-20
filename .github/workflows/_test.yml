@@ -1,0 +1,14 @@
+name: _test
+
+# Unit and integration tests of core and server (this also compiles them).
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-jvm
+      # Testcontainers starts Postgres; the runner has Docker.
+      - run: ./gradlew :core:test :server:test

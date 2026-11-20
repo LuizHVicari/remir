@@ -1,0 +1,11 @@
+name: setup-jvm
+description: JDK 21 and Gradle with caching. Run actions/checkout first.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 21
+    - uses: gradle/actions/setup-gradle@v4

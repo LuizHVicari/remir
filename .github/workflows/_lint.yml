@@ -1,0 +1,27 @@
+name: _lint
+
+# Static checks that need no database and no Android SDK. The three jobs run in parallel.
+on:
+  workflow_call:
+
+jobs:
+  kotlin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-jvm
+      - run: ./gradlew ktlintCheck detekt
+
+  dockerfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+
+  workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: raven-actions/actionlint@v2

@@ -1,0 +1,82 @@
+name: _deploy
+
+# Deploys an image to the Docker host over SSH (blue-green behind Traefik, see deploy/deploy.sh).
+# Call it with `secrets: inherit` and permissions `contents: read` + `packages: read` (the token is used on the
+# server to pull the image). Each environment (dev, prod) holds its own variables and secrets.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: GitHub environment to deploy to (dev or prod)
+        type: string
+        required: true
+      image:
+        description: Full image reference, e.g. ghcr.io/owner/remir-server:1.5.0-dev.a1b2c3d
+        type: string
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
+      IMAGE: ${{ inputs.image }}
+      # Secrets, not variables: this repository is public, and secrets are masked in the public logs.
+      TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The host key is pinned, so the first connection is not trusted blindly.
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Send application settings
+        env:
+          DATABASE_HOST: ${{ vars.DATABASE_HOST }}
+          DATABASE_PORT: ${{ vars.DATABASE_PORT || '5432' }}
+          DATABASE_NAME: ${{ vars.DATABASE_NAME }}
+          DATABASE_USER: ${{ vars.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_POOL_SIZE: ${{ vars.DATABASE_POOL_SIZE || '3' }}
+          CLERK_ISSUER: ${{ vars.CLERK_ISSUER }}
+        run: |
+          set -euo pipefail
+          # Written to a file readable by root only; the secrets never appear in a command line.
+          {
+            echo "PORT=8080"
+            echo "DATABASE_HOST=$DATABASE_HOST"
+            echo "DATABASE_PORT=$DATABASE_PORT"
+            echo "DATABASE_NAME=$DATABASE_NAME"
+            echo "DATABASE_USER=$DATABASE_USER"
+            echo "DATABASE_PASSWORD=$DATABASE_PASSWORD"
+            echo "DATABASE_SSLMODE=require"
+            echo "DATABASE_POOL_SIZE=$DATABASE_POOL_SIZE"
+            echo "CLERK_ISSUER=$CLERK_ISSUER"
+          } | ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$TARGET" \
+            "umask 077 && mkdir -p /opt/remir && cat > /opt/remir/${ENVIRONMENT}.env"
+
+      - name: Deploy
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOMAIN: ${{ vars.DOMAIN }}
+          # Empty behind Cloudflare's proxy; `le` when the record is DNS only (see the README).
+          CERT_RESOLVER: ${{ vars.CERT_RESOLVER }}
+          MEMORY: ${{ vars.CONTAINER_MEMORY || '448m' }}
+        run: |
+          set -euo pipefail
+          # The token travels on stdin, ahead of the script, so it never appears in a process list.
+          {
+            printf 'export ENVIRONMENT=%q IMAGE=%q ENV_FILE=%q DOMAIN=%q CERT_RESOLVER=%q MEMORY=%q\n' \
+              "$ENVIRONMENT" "$IMAGE" "/opt/remir/${ENVIRONMENT}.env" "$DOMAIN" "$CERT_RESOLVER" "$MEMORY"
+            printf 'export GHCR_USER=%q GHCR_TOKEN=%q\n' "$GITHUB_ACTOR" "$GHCR_TOKEN"
+            cat deploy/deploy.sh
+          } | ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$TARGET" bash -s

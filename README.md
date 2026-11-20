@@ -110,8 +110,9 @@ This follows [Clerk's basic RBAC guide](https://clerk.com/docs/guides/secure/bas
 
 The API runs as a Docker container on a host reached over SSH, routed by the Traefik that already runs there, behind Cloudflare's proxy, with the database on Neon. Two workflows:
 
-- `pr.yml`: on a pull request into `dev` or `main`, runs ktlint, detekt, the tests, the Android build and lint, hadolint, a Docker build (not pushed) and actionlint. Nothing is published.
-- `publish.yml`: builds the image from the `Dockerfile`, publishes it to GHCR and deploys it with `deploy/deploy.sh`. It runs only on a push to `dev` or on a release tag.
+- `pr.yml`: on a pull request into `dev` or `main`, runs lint (ktlint, detekt, hadolint, actionlint), the tests, the Android build and lint, and a Docker build (not pushed), all in parallel. Nothing is published.
+- `push.yml`: on a push to `dev` or a release tag, runs the same lint, test and Android checks in parallel, then builds and publishes the image to GHCR and deploys it with `deploy/deploy.sh`. The image is published only when every check passes.
+- `_lint.yml`, `_test.yml`, `_android.yml`, `_docker.yml` and `_deploy.yml` are reusable workflows (`workflow_call`) holding the actual steps; `pr.yml` and `push.yml` only coordinate them. `.github/actions/setup-jvm` is the shared JDK and Gradle setup.
 
 | Trigger | Image tags | GitHub environment |
 |---|---|---|
