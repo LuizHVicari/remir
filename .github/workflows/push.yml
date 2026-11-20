@@ -1,6 +1,7 @@
 name: push
 
-# Publishes the server image to GHCR and deploys it (see deploy/deploy.sh). Pull requests are validated by pr.yml.
+# Publishes the server image to GHCR and deploys it (see deploy/deploy.sh), and builds the signed Android APK of the
+# same environment as a workflow artifact. Pull requests are validated by pr.yml.
 #
 #   push to dev    -> image <next minor>-dev.<sha> (e.g. 1.5.0-dev.a1b2c3d) -> "dev" environment
 #   tag v1.4.0     -> image 1.4.0 and latest, tag must be on main          -> "prod" environment
@@ -25,6 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       environment: ${{ steps.version.outputs.environment }}
+      version: ${{ steps.version.outputs.version }}
       image: ${{ steps.version.outputs.image }}
       tags: ${{ steps.version.outputs.tags }}
     steps:
@@ -64,6 +66,7 @@ jobs:
           fi
           {
             echo "environment=$environment"
+            echo "version=$version"
             echo "image=${repo}:${version}"
             echo "tags<<EOF"
             echo "$tags"
@@ -93,6 +96,19 @@ jobs:
     with:
       push: true
       tags: ${{ needs.version.outputs.tags }}
+
+  # Independent of publish and deploy: a failure here does not block the server, and the other way around.
+  apk:
+    needs: [version, lint, test, android]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_apk.yml
+    with:
+      environment: ${{ needs.version.outputs.environment }}
+      version-name: ${{ needs.version.outputs.version }}
+      # Grows with every run of this workflow, so a newer build can always be installed over an older one.
+      version-code: ${{ github.run_number }}
+    secrets: inherit
 
   deploy:
     needs: [version, publish]

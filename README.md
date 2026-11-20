@@ -111,8 +111,8 @@ This follows [Clerk's basic RBAC guide](https://clerk.com/docs/guides/secure/bas
 The API runs as a Docker container on a host reached over SSH, routed by the Traefik that already runs there, behind Cloudflare's proxy, with the database on Neon. Two workflows:
 
 - `pr.yml`: on a pull request into `dev` or `main`, runs lint (ktlint, detekt, hadolint, actionlint), the tests, the Android build and lint, and a Docker build (not pushed), all in parallel. Nothing is published.
-- `push.yml`: on a push to `dev` or a release tag, runs the same lint, test and Android checks in parallel, then builds and publishes the image to GHCR and deploys it with `deploy/deploy.sh`. The image is published only when every check passes.
-- `_lint.yml`, `_test.yml`, `_android.yml`, `_docker.yml` and `_deploy.yml` are reusable workflows (`workflow_call`) holding the actual steps; `pr.yml` and `push.yml` only coordinate them. `.github/actions/setup-jvm` is the shared JDK and Gradle setup.
+- `push.yml`: on a push to `dev` or a release tag, runs the same lint, test and Android checks in parallel, then builds and publishes the image to GHCR and deploys it with `deploy/deploy.sh`. In parallel with the publish it builds the signed release APK of the same environment and keeps it as a workflow artifact (see "Android APK"). Image and APK are produced only when every check passes.
+- `_lint.yml`, `_test.yml`, `_android.yml`, `_docker.yml`, `_deploy.yml` and `_apk.yml` are reusable workflows (`workflow_call`) holding the actual steps; `pr.yml` and `push.yml` only coordinate them. `.github/actions/setup-jvm` is the shared JDK and Gradle setup.
 
 | Trigger | Image tags | GitHub environment |
 |---|---|---|
@@ -174,6 +174,27 @@ Suggested branch protection on `main` and `dev` (Settings → Branches): require
    Consider a required reviewer on the `prod` environment, so a release waits for an approval.
 
 6. Create the `dev` branch and push to it: that runs the first deploy.
+
+### Android APK
+
+Every run of `push.yml` leaves an artifact `remir-<env>-apk` (30 days) on the run page: `remir-dev-0.2.0-dev.a1b2c3d.apk` from `dev`, `remir-prod-1.4.0.apk` from a tag. `versionName` is the same version as the image; `versionCode` is the run number of the workflow, so a newer build installs over an older one. The APK points at the environment's API (`https://<DOMAIN>/`) and uses its Clerk key.
+
+The artifact is signed, because an unsigned APK cannot be installed. If a setting below is missing the job fails with its name, and the image is not affected. One-time setup:
+
+```bash
+keytool -genkeypair -v -keystore remir-release.jks -alias remir -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 remir-release.jks | gh secret set ANDROID_KEYSTORE_BASE64
+```
+
+| Kind | Name | Where | Value |
+|---|---|---|---|
+| secret | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` | repository | the keystore (base64), its password and the key alias |
+| secret (optional) | `ANDROID_KEY_PASSWORD` | repository | only when the key password differs from the keystore password |
+| variable | `CLERK_PUBLISHABLE_KEY` | environment `dev` and `prod` | `pk_test_...` for `dev`, `pk_live_...` for `prod` |
+
+`DOMAIN` is the same variable the deploy uses. Keep the keystore somewhere safe (a password manager): losing it means users must uninstall to take an update, and it can never be replaced once the app is on the Play Store. `dev` and `prod` use the same key and the same `applicationId`, so one build replaces the other on a phone. Add the release key's SHA-256 (`keytool -list -v -keystore remir-release.jks`) to Clerk's Native applications.
+
+Locally: `./gradlew :app:assembleRelease` signs the APK when `remir.keystore.file`, `remir.keystore.password` and `remir.key.alias` (env vars `REMIR_KEYSTORE_FILE`, `REMIR_KEYSTORE_PASSWORD`, `REMIR_KEY_ALIAS`, and optionally `remir.key.password` / `REMIR_KEY_PASSWORD`) are set, and uses `remir.versionName` / `remir.versionCode` (`REMIR_VERSION_NAME`, `REMIR_VERSION_CODE`) when given.
 
 ## Database migrations
 

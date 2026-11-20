@@ -38,14 +38,47 @@ fun requiredForRelease(
             value
         }
 
+/** Optional value from `-P<property>`, else the `<envVar>` environment variable, else null. */
+fun optionalSetting(
+    property: String,
+    envVar: String,
+): String? =
+    providers
+        .gradleProperty(property)
+        .orElse(providers.environmentVariable(envVar))
+        .orNull
+        ?.takeIf { it.isNotBlank() }
+
+// Signing is optional: without a keystore `assembleRelease` still works, but the APK is unsigned (not installable).
+val signingStoreFile = optionalSetting("remir.keystore.file", "REMIR_KEYSTORE_FILE")
+val signingStorePassword = optionalSetting("remir.keystore.password", "REMIR_KEYSTORE_PASSWORD")
+val signingKeyAlias = optionalSetting("remir.key.alias", "REMIR_KEY_ALIAS")
+// A PKCS12 keystore uses the same password for the store and the key, so this one is optional.
+val signingKeyPassword = optionalSetting("remir.key.password", "REMIR_KEY_PASSWORD")
+
 android {
     namespace = "dev.luizhenriquevicari.remir.app"
 
     defaultConfig {
         // PERMANENT once published on the Play Store. Never change it.
         applicationId = "dev.luizhenriquevicari.remir"
-        versionCode = 1
-        versionName = "0.1.0"
+        // CI passes the real values (see README); these defaults are for local builds.
+        versionCode = optionalSetting("remir.versionCode", "REMIR_VERSION_CODE")?.toInt() ?: 1
+        versionName = optionalSetting("remir.versionName", "REMIR_VERSION_NAME") ?: "0.1.0"
+    }
+
+    signingConfigs {
+        val storeFilePath = signingStoreFile
+        val storePass = signingStorePassword
+        val alias = signingKeyAlias
+        if (storeFilePath != null && storePass != null && alias != null) {
+            create("release") {
+                storeFile = file(storeFilePath)
+                storePassword = storePass
+                keyAlias = alias
+                keyPassword = signingKeyPassword ?: storePass
+            }
+        }
     }
 
     buildTypes {
@@ -63,6 +96,7 @@ android {
             )
         }
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

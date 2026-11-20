@@ -1,0 +1,77 @@
+name: _apk
+
+# Builds the signed release APK for one environment and keeps it as a workflow artifact. The environment supplies
+# the app settings (API URL from DOMAIN, Clerk key from CLERK_PUBLISHABLE_KEY). Call it with `secrets: inherit`.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: GitHub environment the APK is built for (dev or prod)
+        type: string
+        required: true
+      version-name:
+        description: Version shown to the user, e.g. 1.5.0-dev.a1b2c3d or 1.4.0
+        type: string
+        required: true
+      version-code:
+        description: Android versionCode, which must grow with every build that can be installed over another
+        type: string
+        required: true
+      retention-days:
+        description: How long GitHub keeps the artifact
+        type: number
+        default: 30
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
+      VERSION_NAME: ${{ inputs.version-name }}
+      VERSION_CODE: ${{ inputs.version-code }}
+      DOMAIN: ${{ vars.DOMAIN }}
+      CLERK_PUBLISHABLE_KEY: ${{ vars.CLERK_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-jvm
+
+      - name: Prepare signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # An unsigned APK cannot be installed, so a missing key is an error, not a silent downgrade.
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS DOMAIN CLERK_PUBLISHABLE_KEY; do
+            [ -n "${!name:-}" ] || { echo "::error::$name is not set (see README, 'Android APK')"; exit 1; }
+          done
+          keystore="$RUNNER_TEMP/release.jks"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          {
+            echo "REMIR_KEYSTORE_FILE=$keystore"
+            echo "REMIR_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "REMIR_KEY_ALIAS=$KEY_ALIAS"
+            [ -z "$KEY_PASSWORD" ] || echo "REMIR_KEY_PASSWORD=$KEY_PASSWORD"
+            echo "REMIR_API_URL=https://${DOMAIN}/"
+            echo "REMIR_CLERK_PUBLISHABLE_KEY=$CLERK_PUBLISHABLE_KEY"
+            echo "REMIR_VERSION_NAME=$VERSION_NAME"
+            echo "REMIR_VERSION_CODE=$VERSION_CODE"
+          } >> "$GITHUB_ENV"
+
+      - run: ./gradlew :app:assembleRelease
+
+      - name: Name the APK
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp app/build/outputs/apk/release/*.apk "dist/remir-${ENVIRONMENT}-${VERSION_NAME}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: remir-${{ inputs.environment }}-apk
+          path: dist/*.apk
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention-days }}
