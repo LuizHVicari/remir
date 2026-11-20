@@ -6,7 +6,7 @@
 #   ENVIRONMENT   dev | prod
 #   IMAGE         full image reference, e.g. ghcr.io/luizhvicari/remir-server:1.5.0-dev.a1b2c3d
 #   ENV_FILE      path of the env file holding the application settings (DATABASE_*, CLERK_ISSUER, ...)
-#   DOMAIN        host name Traefik routes to this environment, e.g. primo.luizhenriquevicari.dev
+#   DOMAIN        host name Traefik routes to this environment, e.g. remir.luizhenriquevicari.dev
 # Optional:
 #   GHCR_USER, GHCR_TOKEN   log in to ghcr.io before pulling
 #   TRAEFIK_NETWORK         Docker network Traefik watches (default proxy); it must already exist

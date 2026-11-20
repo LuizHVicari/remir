@@ -145,7 +145,7 @@ Suggested branch protection on `main` and `dev` (Settings → Branches): require
    ssh-keygen -t ed25519 -N "" -C remir-deploy -f ~/.ssh/remir_deploy
    ```
 
-3. **DNS and Traefik:** the host must run Traefik with the Docker provider on a `proxy` network and an `websecure` entrypoint (`docker ps` should show it; if it is stopped, `docker start traefik`, and give it `--restart unless-stopped` so a reboot does not leave it down). In Cloudflare create one `A` record per environment pointing at the host, proxied (orange cloud): `primo.luizhenriquevicari.dev` for `prod` and `primo-dev.luizhenriquevicari.dev` for `dev`. Set the zone's SSL/TLS mode to **Full**. Traefik's `le` resolver uses the TLS challenge, which cannot pass through Cloudflare's proxy, so the deploy leaves `CERT_RESOLVER` empty and Traefik serves its default certificate, which Cloudflare accepts in *Full* mode but does not validate. For a validated origin, use *Full (strict)* with a Cloudflare Origin CA certificate loaded in Traefik, or keep the record DNS only and set `CERT_RESOLVER=le`.
+3. **DNS and Traefik:** the host must run Traefik with the Docker provider on a `proxy` network and an `websecure` entrypoint (`docker ps` should show it; if it is stopped, `docker start traefik`, and give it `--restart unless-stopped` so a reboot does not leave it down). In Cloudflare create one `A` record per environment pointing at the host, proxied (orange cloud): `remir.luizhenriquevicari.dev` for `prod` and `remir-dev.luizhenriquevicari.dev` for `dev`. Set the zone's SSL/TLS mode to **Full**. Traefik's `le` resolver uses the TLS challenge, which cannot pass through Cloudflare's proxy, so the deploy leaves `CERT_RESOLVER` empty and Traefik serves its default certificate, which Cloudflare accepts in *Full* mode but does not validate. For a validated origin, use *Full (strict)* with a Cloudflare Origin CA certificate loaded in Traefik, or keep the record DNS only and set `CERT_RESOLVER=le`.
 
 4. **GitHub secrets** (repository level, Settings → Secrets and variables → Actions). They are secrets, not variables, because this repository is public and secrets are masked in its public logs:
 
@@ -167,7 +167,7 @@ Suggested branch protection on `main` and `dev` (Settings → Branches): require
    | variable | `DATABASE_HOST`, `DATABASE_NAME`, `DATABASE_USER` | from the Neon branch (direct host) |
    | secret | `DATABASE_PASSWORD` | from the Neon branch |
    | variable | `CLERK_ISSUER` | Clerk Frontend API URL of that environment |
-   | variable | `DOMAIN` | host name routed to this environment (`primo.luizhenriquevicari.dev` or `primo-dev.luizhenriquevicari.dev`) |
+   | variable | `DOMAIN` | host name routed to this environment (`remir.luizhenriquevicari.dev` or `remir-dev.luizhenriquevicari.dev`) |
    | variable (optional) | `DATABASE_PORT`, `DATABASE_POOL_SIZE`, `CONTAINER_MEMORY`, `CERT_RESOLVER` | defaults `5432`, `3`, `448m`, empty |
 
    Consider a required reviewer on the `prod` environment, so a release waits for an approval.

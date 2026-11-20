@@ -12,7 +12,7 @@ You may use Remir only for lawful purposes and in line with these terms. You mus
 
 ## Your data
 
-The data you enter in Remir belongs to you. You give me only the permission needed to store it and process it to run the app for you. How personal data is handled is described in the [Privacy Policy](https://primo.luizhenriquevicari.dev/legal/privacy).
+The data you enter in Remir belongs to you. You give me only the permission needed to store it and process it to run the app for you. How personal data is handled is described in the [Privacy Policy](https://remir.luizhenriquevicari.dev/legal/privacy).
 
 ## The service
 
