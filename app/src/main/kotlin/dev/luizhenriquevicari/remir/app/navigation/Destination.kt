@@ -20,6 +20,9 @@ sealed interface Destination {
     data object LogSleep : Destination
 
     @Serializable
+    data object EditSleepGoal : Destination
+
+    @Serializable
     data object Profile : Destination
 
     @Serializable

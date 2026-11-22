@@ -31,7 +31,9 @@ import dev.luizhenriquevicari.remir.app.designsystem.RemirPreview
 import dev.luizhenriquevicari.remir.app.designsystem.components.ErrorState
 import dev.luizhenriquevicari.remir.app.designsystem.components.Loading
 import dev.luizhenriquevicari.remir.app.navigation.TabScaffold
+import dev.luizhenriquevicari.remir.core.sleep.SleepGoalDto
 import dev.luizhenriquevicari.remir.core.sleep.SleepRecordDto
+import kotlinx.datetime.LocalTime
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -43,15 +45,22 @@ import kotlin.uuid.Uuid
 fun SleepRoute(
     onOpenProfile: () -> Unit,
     onLogSleep: () -> Unit,
+    onEditGoal: () -> Unit,
     viewModel: SleepViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    // Also runs when coming back from the log screen, so the new night shows up.
+    // Also runs when coming back from the other screens, so a new night or goal shows up.
     LifecycleResumeEffect(viewModel) {
         viewModel.refresh()
         onPauseOrDispose {}
     }
-    SleepScreen(state, onOpenProfile = onOpenProfile, onLogSleep = onLogSleep, onRetry = viewModel::retry)
+    SleepScreen(
+        state = state,
+        onOpenProfile = onOpenProfile,
+        onLogSleep = onLogSleep,
+        onEditGoal = onEditGoal,
+        onRetry = viewModel::retry,
+    )
 }
 
 /** Stateless: state + lambdas only. */
@@ -60,6 +69,7 @@ fun SleepScreen(
     state: SleepState,
     onOpenProfile: () -> Unit,
     onLogSleep: () -> Unit,
+    onEditGoal: () -> Unit,
     onRetry: () -> Unit,
 ) {
     TabScaffold(
@@ -77,25 +87,15 @@ fun SleepScreen(
         when {
             state.loading -> Loading(modifier)
             state.error != null && state.records.isEmpty() -> ErrorState(state.error.asString(), modifier, onRetry)
-            state.records.isEmpty() -> EmptyState(modifier)
-            else -> SleepList(state.records, modifier)
+            else -> SleepList(state, onEditGoal, modifier)
         }
     }
 }
 
 @Composable
-private fun EmptyState(modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
-        Text(
-            stringResource(R.string.sleep_empty),
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-}
-
-@Composable
 private fun SleepList(
-    records: List<SleepRecordDto>,
+    state: SleepState,
+    onEditGoal: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -104,7 +104,11 @@ private fun SleepList(
         contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(records, key = { it.id }) { SleepRecordCard(it) }
+        item { SleepGoalCard(goal = state.goal, onEdit = onEditGoal) }
+        if (state.records.isEmpty()) {
+            item { Text(stringResource(R.string.sleep_empty), style = MaterialTheme.typography.bodyLarge) }
+        }
+        items(state.records, key = { it.id }) { SleepRecordCard(it) }
     }
 }
 
@@ -130,7 +134,7 @@ private fun SleepRecordCard(record: SleepRecordDto) {
 }
 
 @Composable
-private fun Duration.asHoursAndMinutes(): String =
+fun Duration.asHoursAndMinutes(): String =
     stringResource(R.string.sleep_duration, inWholeHours.toInt(), (inWholeMinutes % MINUTES_PER_HOUR).toInt())
 
 private const val MINUTES_PER_HOUR = 60
@@ -155,14 +159,32 @@ private val sampleRecords =
         sampleRecord("2026-03-09T22:45:00Z", null, "2026-03-10T06:30:00Z", "2026-03-10T06:45:00Z"),
     )
 
+private val sampleGoal =
+    SleepGoalDto(LocalTime.parse("23:00"), LocalTime.parse("07:00"), 480, Instant.parse("2026-03-10T12:00:00Z"))
+
 @PreviewLightDark
 @Composable
 private fun SleepScreenPreview() {
     RemirPreview {
         SleepScreen(
+            SleepState(loading = false, records = sampleRecords, goal = sampleGoal),
+            onOpenProfile = {},
+            onLogSleep = {},
+            onEditGoal = {},
+            onRetry = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun SleepScreenNoGoalPreview() {
+    RemirPreview {
+        SleepScreen(
             SleepState(loading = false, records = sampleRecords),
             onOpenProfile = {},
             onLogSleep = {},
+            onEditGoal = {},
             onRetry = {},
         )
     }
@@ -172,12 +194,20 @@ private fun SleepScreenPreview() {
 @Composable
 private fun SleepScreenEmptyPreview() {
     RemirPreview {
-        SleepScreen(SleepState(loading = false), onOpenProfile = {}, onLogSleep = {}, onRetry = {})
+        SleepScreen(
+            SleepState(loading = false),
+            onOpenProfile = {},
+            onLogSleep = {},
+            onEditGoal = {},
+            onRetry = {},
+        )
     }
 }
 
 @PreviewLightDark
 @Composable
 private fun SleepScreenLoadingPreview() {
-    RemirPreview { SleepScreen(SleepState(), onOpenProfile = {}, onLogSleep = {}, onRetry = {}) }
+    RemirPreview {
+        SleepScreen(SleepState(), onOpenProfile = {}, onLogSleep = {}, onEditGoal = {}, onRetry = {})
+    }
 }

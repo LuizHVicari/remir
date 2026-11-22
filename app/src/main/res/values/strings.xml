@@ -47,6 +47,20 @@
     <string name="sleep_slept">Slept %1$s</string>
     <string name="sleep_duration">%1$dh %2$02dmin</string>
 
+    <string name="sleep_goal_cta_title">Set your sleep goal</string>
+    <string name="sleep_goal_cta_body">Choose a bedtime, a wake up time or how long you want to sleep.</string>
+    <string name="sleep_goal_title">My sleep goal</string>
+    <string name="sleep_goal_edit">Edit sleep goal</string>
+    <string name="sleep_goal_bedtime">Bedtime</string>
+    <string name="sleep_goal_wake_up">Wake up</string>
+    <string name="sleep_goal_sleep">Sleep</string>
+    <string name="sleep_goal_edit_title">Sleep goal</string>
+    <string name="sleep_goal_hint">All three are optional, but set at least one.</string>
+    <string name="sleep_goal_bedtime_field">Bedtime (optional)</string>
+    <string name="sleep_goal_wake_up_field">Wake up time (optional)</string>
+    <string name="sleep_goal_duration_field">Time asleep (optional)</string>
+    <string name="sleep_goal_duration_dialog">Hours and minutes of sleep</string>
+
     <string name="profile_title">Profile</string>
     <string name="profile_no_name">No name yet</string>
     <string name="profile_member_since">Member since %1$s</string>

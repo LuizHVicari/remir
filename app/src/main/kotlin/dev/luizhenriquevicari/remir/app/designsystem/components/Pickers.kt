@@ -87,15 +87,18 @@ fun RemirTimePickerDialog(
     initial: LocalTime,
     onConfirm: (LocalTime) -> Unit,
     onDismiss: () -> Unit,
+    title: String? = null,
+    is24Hour: Boolean = DateFormat.is24HourFormat(LocalContext.current),
 ) {
     val state =
         rememberTimePickerState(
             initialHour = initial.hour,
             initialMinute = initial.minute,
-            is24Hour = DateFormat.is24HourFormat(LocalContext.current),
+            is24Hour = is24Hour,
         )
     AlertDialog(
         onDismissRequest = onDismiss,
+        title = title?.let { { Text(it) } },
         confirmButton = {
             TextButton(onClick = { onConfirm(LocalTime.of(state.hour, state.minute)) }) {
                 Text(stringResource(R.string.ok))

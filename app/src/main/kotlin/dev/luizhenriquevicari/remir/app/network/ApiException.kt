@@ -3,6 +3,7 @@ package dev.luizhenriquevicari.remir.app.network
 import dev.luizhenriquevicari.remir.app.R
 import dev.luizhenriquevicari.remir.app.common.UiText
 import dev.luizhenriquevicari.remir.core.api.ApiError
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
 
@@ -27,6 +28,10 @@ val Throwable.userMessage: UiText
             is IOException -> UiText.Resource(R.string.error_network)
             else -> message?.let(UiText::Dynamic) ?: UiText.Resource(R.string.error_unexpected)
         }
+
+/** The server answered 404: the thing asked for does not exist (yet). */
+val Throwable.isNotFound: Boolean
+    get() = (this as? ApiException)?.status == HttpStatusCode.NotFound.value
 
 /** `ApiError.fields` when the error came from server-side validation; empty otherwise. */
 val Throwable.fieldErrors: Map<String, String>

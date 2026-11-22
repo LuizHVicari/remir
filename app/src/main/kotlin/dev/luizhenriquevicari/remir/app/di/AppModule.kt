@@ -7,6 +7,7 @@ import dev.luizhenriquevicari.remir.app.features.legal.LegalApi
 import dev.luizhenriquevicari.remir.app.features.legal.LegalGateViewModel
 import dev.luizhenriquevicari.remir.app.features.profile.ProfileApi
 import dev.luizhenriquevicari.remir.app.features.profile.ProfileViewModel
+import dev.luizhenriquevicari.remir.app.features.sleep.EditSleepGoalViewModel
 import dev.luizhenriquevicari.remir.app.features.sleep.LogSleepViewModel
 import dev.luizhenriquevicari.remir.app.features.sleep.SleepApi
 import dev.luizhenriquevicari.remir.app.features.sleep.SleepViewModel
@@ -28,6 +29,7 @@ val appModule =
         singleOf(::SleepApi)
         viewModelOf(::SleepViewModel)
         viewModelOf(::LogSleepViewModel)
+        viewModelOf(::EditSleepGoalViewModel)
 
         // legal
         singleOf(::LegalApi)

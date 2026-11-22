@@ -45,6 +45,20 @@
     <string name="sleep_slept">Dormiu %1$s</string>
     <string name="sleep_duration">%1$dh %2$02dmin</string>
 
+    <string name="sleep_goal_cta_title">Defina sua meta de sono</string>
+    <string name="sleep_goal_cta_body">Escolha um horário de dormir, de acordar ou quanto tempo você quer dormir.</string>
+    <string name="sleep_goal_title">Minha meta de sono</string>
+    <string name="sleep_goal_edit">Editar meta de sono</string>
+    <string name="sleep_goal_bedtime">Dormir</string>
+    <string name="sleep_goal_wake_up">Acordar</string>
+    <string name="sleep_goal_sleep">Sono</string>
+    <string name="sleep_goal_edit_title">Meta de sono</string>
+    <string name="sleep_goal_hint">Os três são opcionais, mas defina pelo menos um.</string>
+    <string name="sleep_goal_bedtime_field">Horário de dormir (opcional)</string>
+    <string name="sleep_goal_wake_up_field">Horário de acordar (opcional)</string>
+    <string name="sleep_goal_duration_field">Tempo de sono (opcional)</string>
+    <string name="sleep_goal_duration_dialog">Horas e minutos de sono</string>
+
     <string name="profile_title">Perfil</string>
     <string name="profile_no_name">Ainda sem nome</string>
     <string name="profile_member_since">Membro desde %1$s</string>
