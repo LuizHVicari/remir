@@ -107,19 +107,11 @@ private fun SummaryContent(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    SleepTimeChart(
-        title = stringResource(R.string.sleep_chart_bedtime),
-        points = summary.bedtimePoints,
+    SleepTimesChart(
+        summary = summary,
         period = period,
-        formatMinutes = { bedtimeFromAxis(it).toLocalizedTime() },
-        lineColor = MaterialTheme.colorScheme.primary,
-    )
-    SleepTimeChart(
-        title = stringResource(R.string.sleep_chart_wake_up),
-        points = summary.wakeUpPoints,
-        period = period,
-        formatMinutes = { timeOfDay(it).toLocalizedTime() },
-        lineColor = MaterialTheme.colorScheme.secondary,
+        bedtimeColor = MaterialTheme.colorScheme.primary,
+        wakeUpColor = MaterialTheme.colorScheme.tertiary,
     )
 }
 
