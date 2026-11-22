@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -105,15 +106,31 @@ fun RemirTimePickerDialog(
     )
 }
 
+/** Date dialog where days after [maxDate] (today by default) are disabled, so nothing can be logged in the future. */
 @Composable
 fun RemirDatePickerDialog(
     initial: LocalDate,
     onConfirm: (LocalDate) -> Unit,
     onDismiss: () -> Unit,
+    maxDate: LocalDate = LocalDate.now(),
 ) {
     // The picker works in UTC milliseconds at midnight, whatever the device's time zone is.
     val initialMillis = initial.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-    val state = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+    val selectableDates =
+        remember(maxDate) {
+            object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long) =
+                    !Instant
+                        .ofEpochMilli(utcTimeMillis)
+                        .atZone(ZoneOffset.UTC)
+                        .toLocalDate()
+                        .isAfter(maxDate)
+
+                override fun isSelectableYear(year: Int) = year <= maxDate.year
+            }
+        }
+    val state =
+        rememberDatePickerState(initialSelectedDateMillis = initialMillis, selectableDates = selectableDates)
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
