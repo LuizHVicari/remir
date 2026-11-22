@@ -135,6 +135,52 @@ class SleepRoutesTest {
         }
 
     @Test
+    fun `GET sleep pages through the nights, newest first, without repeating or skipping one`() =
+        remirTestApplication { client ->
+            val userId = newUserId()
+            val day = kotlin.time.Duration.parse("1d")
+            val nights = (0 until 5).map { night.shifted(day * it) }
+            nights.forEach { client.log(userId, it) }
+
+            suspend fun page(query: String) =
+                client.get("/sleep?$query") { bearerAuth(TestJwt.token(userId)) }.body<List<SleepRecordDto>>()
+
+            val newestFirst = nights.map { it.bedtime }.reversed()
+            assertEquals(newestFirst.take(2), page("limit=2&offset=0").map { it.bedtime })
+            assertEquals(newestFirst.slice(2..3), page("limit=2&offset=2").map { it.bedtime })
+            assertEquals(newestFirst.drop(4), page("limit=2&offset=4").map { it.bedtime })
+            assertTrue(page("limit=2&offset=6").isEmpty())
+        }
+
+    @Test
+    fun `GET sleep pages stay stable when two nights started at the same moment`() =
+        remirTestApplication { client ->
+            val userId = newUserId()
+            repeat(4) { client.log(userId, night) }
+
+            suspend fun page(offset: Int) =
+                client
+                    .get("/sleep?limit=2&offset=$offset") { bearerAuth(TestJwt.token(userId)) }
+                    .body<List<SleepRecordDto>>()
+
+            val ids = (page(0) + page(2)).map { it.id }
+
+            assertEquals(4, ids.toSet().size, "ids=$ids")
+        }
+
+    @Test
+    fun `GET sleep corrects a limit that is too big and an offset below zero`() =
+        remirTestApplication { client ->
+            val userId = newUserId()
+            client.log(userId, night)
+
+            val response = client.get("/sleep?limit=100000&offset=-5") { bearerAuth(TestJwt.token(userId)) }
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals(1, response.body<List<SleepRecordDto>>().size)
+        }
+
+    @Test
     fun `GET sleep with a malformed since answers 400`() =
         remirTestApplication { client ->
             val response = client.get("/sleep?since=yesterday") { bearerAuth(TestJwt.token(newUserId())) }

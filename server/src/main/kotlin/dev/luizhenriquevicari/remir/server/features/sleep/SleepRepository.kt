@@ -18,19 +18,22 @@ import kotlin.uuid.Uuid
 /** Exposed DSL only. Runs inside `dbQuery` (opened by the Service). Returns `core` DTOs. */
 class SleepRepository {
     /**
-     * Newest first, always capped so a response stays small. Without [since] it is the latest [LIST_LIMIT] nights;
-     * with it, the nights that started at or after it, up to [SINCE_LIMIT] (a bit over a year of nights).
+     * One page of the user's nights, newest first, optionally only those that started at or after [since]. The id
+     * breaks ties between nights that started at the same moment, so pages never repeat or skip a night.
      */
     fun list(
         userId: String,
-        since: Instant? = null,
+        since: Instant?,
+        limit: Int,
+        offset: Int,
     ): List<SleepRecordDto> =
         SleepRecordsTable
             .selectAll()
             .where { SleepRecordsTable.userId eq userId }
             .apply { since?.let { andWhere { SleepRecordsTable.bedtime greaterEq it } } }
-            .orderBy(SleepRecordsTable.bedtime, SortOrder.DESC)
-            .limit(if (since == null) LIST_LIMIT else SINCE_LIMIT)
+            .orderBy(SleepRecordsTable.bedtime to SortOrder.DESC, SleepRecordsTable.id to SortOrder.DESC)
+            .limit(limit)
+            .offset(offset.toLong())
             .map { it.toDto() }
 
     fun insert(
@@ -98,9 +101,4 @@ class SleepRepository {
             gotUpAt = this[SleepRecordsTable.gotUpAt],
             createdAt = this[SleepRecordsTable.createdAt],
         )
-
-    private companion object {
-        const val LIST_LIMIT = 100
-        const val SINCE_LIMIT = 400
-    }
 }

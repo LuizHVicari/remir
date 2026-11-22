@@ -16,10 +16,21 @@ class SleepService(
     private val profileRepository: ProfileRepository,
     private val clock: Clock = Clock.System,
 ) {
+    /**
+     * One page of the user's nights, newest first. Without a [limit] it is the latest [DEFAULT_LIMIT] nights, or up
+     * to [MAX_LIMIT] when [since] narrows it (a bit over a year of nights, for the summary). A [limit] over
+     * [MAX_LIMIT] or an [offset] below zero is quietly corrected, so a response always stays small.
+     */
     suspend fun list(
         userId: String,
         since: Instant? = null,
-    ): List<SleepRecordDto> = dbQuery { repository.list(userId, since) }
+        limit: Int? = null,
+        offset: Int = 0,
+    ): List<SleepRecordDto> =
+        dbQuery {
+            val wanted = limit ?: if (since == null) DEFAULT_LIMIT else MAX_LIMIT
+            repository.list(userId, since, wanted.coerceIn(1, MAX_LIMIT), offset.coerceAtLeast(0))
+        }
 
     suspend fun goal(userId: String): SleepGoalDto =
         dbQuery { repository.findGoal(userId) ?: throw NotFound("No sleep goal set") }
@@ -44,4 +55,9 @@ class SleepService(
             profileRepository.provision(userId, now)
             repository.insert(userId, request, now)
         }
+
+    private companion object {
+        const val DEFAULT_LIMIT = 100
+        const val MAX_LIMIT = 400
+    }
 }
