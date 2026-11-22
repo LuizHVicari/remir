@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Remir</string>
+    <string name="app_name" translatable="false">Remir</string>
 
     <string name="missing_clerk_key">Set clerk.publishableKey in local.properties and rebuild (see README).</string>
     <string name="clerk_init_failed">Could not start Clerk: %1$s</string>
@@ -9,8 +9,12 @@
     <string name="error_network">Could not reach the server</string>
     <string name="error_unexpected">Unexpected error</string>
 
-    <string name="home_title">Remir</string>
-    <string name="home_coming_soon">Expenses, church, habits, work, study and fitness are coming soon.</string>
+    <string name="home_title" translatable="false">Remir</string>
+    <string name="home_coming_soon">Coming soon.</string>
+    <string name="home_tab_sleep">Sleep</string>
+    <string name="home_tab_faith">Faith</string>
+    <string name="home_tab_finance">Finance</string>
+    <string name="home_tab_habits">Habits</string>
     <string name="home_open_profile">My profile</string>
     <string name="home_open_legal_admin">Legal documents</string>
 

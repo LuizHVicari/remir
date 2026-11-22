@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="missing_clerk_key">Define clerk.publishableKey en local.properties y vuelve a compilar (consulta el README).</string>
+    <string name="clerk_init_failed">No se pudo iniciar Clerk: %1$s</string>
+    <string name="retry">Reintentar</string>
+    <string name="back">Atrás</string>
+    <string name="error_network">No se pudo conectar con el servidor</string>
+    <string name="error_unexpected">Error inesperado</string>
+
+    <string name="home_coming_soon">Próximamente.</string>
+    <string name="home_tab_sleep">Sueño</string>
+    <string name="home_tab_faith">Fe</string>
+    <string name="home_tab_finance">Finanzas</string>
+    <string name="home_tab_habits">Hábitos</string>
+    <string name="home_open_profile">Mi perfil</string>
+    <string name="home_open_legal_admin">Documentos legales</string>
+
+    <string name="legal_privacy_title">Política de Privacidad</string>
+    <string name="legal_terms_title">Términos de Servicio</string>
+    <string name="legal_accept">Aceptar y continuar</string>
+    <string name="legal_review_prompt">Revisa y acepta para continuar.</string>
+
+    <string name="legal_admin_title">Documentos legales</string>
+    <string name="legal_admin_content">Contenido (Markdown)</string>
+    <string name="legal_admin_requires_acceptance">Pedir a los usuarios que acepten de nuevo</string>
+    <string name="legal_admin_publish">Publicar nueva versión</string>
+    <string name="legal_admin_not_published">Aún no publicado</string>
+    <string name="legal_admin_current_version">Versión actual: %1$d</string>
+    <string name="legal_admin_published">Versión %1$d publicada</string>
+
+    <string name="profile_title">Perfil</string>
+    <string name="profile_no_name">Aún sin nombre</string>
+    <string name="profile_member_since">Miembro desde %1$s</string>
+    <string name="profile_display_name">Nombre visible</string>
+    <string name="profile_save">Guardar</string>
+    <string name="profile_saved">¡Guardado!</string>
+    <string name="profile_sign_out">Cerrar sesión</string>
+    <string name="profile_unavailable">Perfil no disponible</string>
+</resources>
