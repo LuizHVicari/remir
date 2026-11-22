@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="missing_clerk_key">Defina clerk.publishableKey no local.properties e recompile (veja o README).</string>
+    <string name="clerk_init_failed">Não foi possível iniciar o Clerk: %1$s</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="back">Voltar</string>
+    <string name="error_network">Não foi possível conectar ao servidor</string>
+    <string name="error_unexpected">Erro inesperado</string>
+
+    <string name="coming_soon">Em breve.</string>
+    <string name="open_profile">Meu perfil</string>
+
+    <string name="tab_sleep">Sono</string>
+    <string name="tab_faith">Fé</string>
+    <string name="tab_finance">Financeiro</string>
+    <string name="tab_habits">Hábitos</string>
+
+    <string name="legal_privacy_title">Política de Privacidade</string>
+    <string name="legal_terms_title">Termos de Uso</string>
+    <string name="legal_accept">Aceitar e continuar</string>
+    <string name="legal_review_prompt">Leia e aceite para continuar.</string>
+
+    <string name="legal_admin_title">Documentos legais</string>
+    <string name="legal_admin_content">Conteúdo (Markdown)</string>
+    <string name="legal_admin_requires_acceptance">Pedir que os usuários aceitem novamente</string>
+    <string name="legal_admin_publish">Publicar nova versão</string>
+    <string name="legal_admin_not_published">Ainda não publicado</string>
+    <string name="legal_admin_current_version">Versão atual: %1$d</string>
+    <string name="legal_admin_published">Versão %1$d publicada</string>
+
+    <string name="profile_title">Perfil</string>
+    <string name="profile_no_name">Ainda sem nome</string>
+    <string name="profile_member_since">Membro desde %1$s</string>
+    <string name="profile_display_name">Nome de exibição</string>
+    <string name="profile_save">Salvar</string>
+    <string name="profile_saved">Salvo!</string>
+    <string name="profile_sign_out">Sair</string>
+    <string name="profile_unavailable">Perfil indisponível</string>
+    <string name="profile_open_legal_admin">Documentos legais</string>
+</resources>

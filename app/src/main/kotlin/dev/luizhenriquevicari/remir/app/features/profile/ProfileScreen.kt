@@ -34,12 +34,14 @@ import kotlin.time.Instant
 @Composable
 fun ProfileRoute(
     onBack: () -> Unit,
+    onOpenLegalAdmin: () -> Unit,
     viewModel: ProfileViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     ProfileScreen(
         state = state,
         onBack = onBack,
+        onOpenLegalAdmin = onOpenLegalAdmin,
         onDisplayNameChange = viewModel::onDisplayNameChange,
         onSave = viewModel::save,
         onSignOut = viewModel::signOut,
@@ -52,6 +54,7 @@ fun ProfileRoute(
 fun ProfileScreen(
     state: ProfileState,
     onBack: () -> Unit,
+    onOpenLegalAdmin: () -> Unit,
     onDisplayNameChange: (String) -> Unit,
     onSave: () -> Unit,
     onSignOut: () -> Unit,
@@ -67,7 +70,16 @@ fun ProfileScreen(
                     modifier,
                     onRetry,
                 )
-            else -> ProfileContent(state, state.profile, onDisplayNameChange, onSave, onSignOut, modifier)
+            else ->
+                ProfileContent(
+                    state,
+                    state.profile,
+                    onDisplayNameChange,
+                    onSave,
+                    onOpenLegalAdmin,
+                    onSignOut,
+                    modifier,
+                )
         }
     }
 }
@@ -78,6 +90,7 @@ private fun ProfileContent(
     profile: ProfileDto,
     onDisplayNameChange: (String) -> Unit,
     onSave: () -> Unit,
+    onOpenLegalAdmin: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -103,6 +116,10 @@ private fun ProfileContent(
         state.error?.let { Text(it.asString(), color = MaterialTheme.colorScheme.error) }
         if (state.saved) Text(stringResource(R.string.profile_saved), color = MaterialTheme.colorScheme.primary)
         PrimaryButton(stringResource(R.string.profile_save), onClick = onSave, loading = state.saving)
+        // Server-side checks still guard every admin call; this only decides whether to show the entry.
+        if (profile.isAdmin) {
+            SecondaryButton(stringResource(R.string.profile_open_legal_admin), onClick = onOpenLegalAdmin)
+        }
         SecondaryButton(stringResource(R.string.profile_sign_out), onClick = onSignOut, enabled = !state.signingOut)
     }
 }
@@ -128,6 +145,7 @@ private fun ProfileScreenPreview() {
                     fieldErrors = mapOf("displayName" to "must have between 2 and 60 characters"),
                 ),
             onBack = {},
+            onOpenLegalAdmin = {},
             onDisplayNameChange = {},
             onSave = {},
             onSignOut = {},

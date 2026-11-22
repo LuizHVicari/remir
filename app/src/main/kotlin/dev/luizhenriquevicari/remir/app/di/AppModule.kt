@@ -2,7 +2,6 @@ package dev.luizhenriquevicari.remir.app.di
 
 import dev.luizhenriquevicari.remir.app.BuildConfig
 import dev.luizhenriquevicari.remir.app.auth.ClerkSession
-import dev.luizhenriquevicari.remir.app.features.home.HomeViewModel
 import dev.luizhenriquevicari.remir.app.features.legal.AdminLegalViewModel
 import dev.luizhenriquevicari.remir.app.features.legal.LegalApi
 import dev.luizhenriquevicari.remir.app.features.legal.LegalGateViewModel
@@ -17,9 +16,6 @@ val appModule =
     module {
         singleOf(::ClerkSession)
         single { createHttpClient(BuildConfig.API_URL, get<ClerkSession>()::token) }
-
-        // home
-        viewModelOf(::HomeViewModel)
 
         // profile
         singleOf(::ProfileApi)
