@@ -38,7 +38,7 @@ object HabitsTable : Table("habits") {
     val id = uuid("id")                                          // kotlin.uuid.Uuid
     val userId = varchar("user_id", 64).references(UsersTable.id).index()
     val name = varchar("name", 80)
-    val createdAt = timestamp("created_at")                      // org.jetbrains.exposed.v1.datetime.timestamp
+    val createdAt = timestamptz("created_at")                    // server/db/Timestamps.kt: TIMESTAMPTZ as Instant
     override val primaryKey = PrimaryKey(id)
 }
 ```
