@@ -5,6 +5,7 @@ import dev.luizhenriquevicari.remir.server.features.legal.legalPages
 import dev.luizhenriquevicari.remir.server.features.legal.legalRoutes
 import dev.luizhenriquevicari.remir.server.features.profile.profileRoutes
 import dev.luizhenriquevicari.remir.server.features.site.siteRoutes
+import dev.luizhenriquevicari.remir.server.features.sleep.sleepRoutes
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
 import io.ktor.server.response.respondText
@@ -24,6 +25,7 @@ fun Application.configureRouting(dependencies: Dependencies) {
         authenticate(CLERK_AUTH) {
             profileRoutes(dependencies.profileService)
             legalRoutes(dependencies.legalService)
+            sleepRoutes(dependencies.sleepService)
         }
     }
 }
