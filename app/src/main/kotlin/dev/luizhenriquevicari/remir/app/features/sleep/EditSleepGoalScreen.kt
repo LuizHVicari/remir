@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +52,8 @@ fun EditSleepGoalRoute(
         onWakeUpTimeChange = viewModel::onWakeUpTimeChange,
         onSleepMinutesChange = viewModel::onSleepMinutesChange,
         onSave = viewModel::save,
+        onSaveAnyway = viewModel::saveAnyway,
+        onDismissMismatch = viewModel::dismissMismatch,
     )
 }
 
@@ -65,6 +69,8 @@ fun EditSleepGoalScreen(
     onWakeUpTimeChange: (LocalTime?) -> Unit,
     onSleepMinutesChange: (Int?) -> Unit,
     onSave: () -> Unit,
+    onSaveAnyway: () -> Unit,
+    onDismissMismatch: () -> Unit,
 ) {
     var picker by rememberSaveable { mutableStateOf<GoalPicker?>(null) }
     Scaffold(topBar = { RemirTopBar(stringResource(R.string.sleep_goal_edit_title), onBack = onBack) }) { padding ->
@@ -83,16 +89,7 @@ fun EditSleepGoalScreen(
                     .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = wholeGoalError ?: stringResource(R.string.sleep_goal_hint),
-                style = MaterialTheme.typography.bodyMedium,
-                color =
-                    if (wholeGoalError != null) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-            )
+            GoalHint(wholeGoalError)
             PickerField(
                 value = state.bedtime?.toLocalizedTime() ?: notSet,
                 label = stringResource(R.string.sleep_goal_bedtime_field),
@@ -123,6 +120,52 @@ fun EditSleepGoalScreen(
         onBedtimeChange = onBedtimeChange,
         onWakeUpTimeChange = onWakeUpTimeChange,
         onSleepMinutesChange = onSleepMinutesChange,
+    )
+    state.mismatch?.let { SleepGoalMismatchDialog(it, onSaveAnyway, onDismissMismatch) }
+}
+
+/** The rule of the form, or the error when the whole goal is empty. */
+@Composable
+private fun GoalHint(error: String?) {
+    Text(
+        text = error ?: stringResource(R.string.sleep_goal_hint),
+        style = MaterialTheme.typography.bodyMedium,
+        color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+    )
+}
+
+/**
+ * Warns that the times do not add up, but lets the user keep them. "Review goal" is the confirm button because it
+ * is the suggested way out; dismissing the dialog any other way also means reviewing.
+ */
+@Composable
+private fun SleepGoalMismatchDialog(
+    mismatch: SleepGoalMismatch,
+    onSaveAnyway: () -> Unit,
+    onReview: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onReview,
+        title = { Text(stringResource(R.string.sleep_goal_mismatch_title)) },
+        text = {
+            Text(
+                stringResource(
+                    R.string.sleep_goal_mismatch_body,
+                    mismatch.bedtime.toLocalizedTime(),
+                    mismatch.wakeUpTime.toLocalizedTime(),
+                    mismatch.timeInBed.asHoursAndMinutes(),
+                    mismatch.sleep.asHoursAndMinutes(),
+                ),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onReview,
+            ) { Text(stringResource(R.string.sleep_goal_mismatch_review)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onSaveAnyway) { Text(stringResource(R.string.sleep_goal_mismatch_save_anyway)) }
+        },
     )
 }
 
@@ -191,6 +234,34 @@ private fun EditSleepGoalScreenPreview() {
             onWakeUpTimeChange = {},
             onSleepMinutesChange = {},
             onSave = {},
+            onSaveAnyway = {},
+            onDismissMismatch = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun EditSleepGoalScreenMismatchPreview() {
+    val bedtime = LocalTime.parse("23:00")
+    val wakeUpTime = LocalTime.parse("06:00")
+    RemirPreview {
+        EditSleepGoalScreen(
+            state =
+                EditSleepGoalState(
+                    loading = false,
+                    bedtime = bedtime,
+                    wakeUpTime = wakeUpTime,
+                    sleepMinutes = 480,
+                    mismatch = checkSleepGoalFits(bedtime, wakeUpTime, sleepMinutes = 480),
+                ),
+            onBack = {},
+            onBedtimeChange = {},
+            onWakeUpTimeChange = {},
+            onSleepMinutesChange = {},
+            onSave = {},
+            onSaveAnyway = {},
+            onDismissMismatch = {},
         )
     }
 }
@@ -210,6 +281,8 @@ private fun EditSleepGoalScreenEmptyErrorPreview() {
             onWakeUpTimeChange = {},
             onSleepMinutesChange = {},
             onSave = {},
+            onSaveAnyway = {},
+            onDismissMismatch = {},
         )
     }
 }

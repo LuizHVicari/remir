@@ -53,6 +53,10 @@
     <string name="sleep_goal_wake_up">Despertar</string>
     <string name="sleep_goal_sleep">Sueño</string>
     <string name="sleep_goal_edit_title">Meta de sueño</string>
+    <string name="sleep_goal_mismatch_title">Estas horas no cuadran</string>
+    <string name="sleep_goal_mismatch_body">De %1$s a %2$s estás %3$s en la cama, pero la meta pide %4$s de sueño. No se puede dormir más que el tiempo que se está en la cama.</string>
+    <string name="sleep_goal_mismatch_review">Revisar meta</string>
+    <string name="sleep_goal_mismatch_save_anyway">Guardar de todos modos</string>
     <string name="sleep_goal_hint">Los tres son opcionales, pero define al menos uno.</string>
     <string name="sleep_goal_bedtime_field">Hora de acostarte (opcional)</string>
     <string name="sleep_goal_wake_up_field">Hora de despertarte (opcional)</string>

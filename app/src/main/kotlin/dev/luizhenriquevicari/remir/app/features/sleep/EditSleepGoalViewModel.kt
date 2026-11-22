@@ -30,6 +30,8 @@ data class EditSleepGoalState(
     val fieldErrors: Map<String, String> = emptyMap(),
     /** General error (network, 500...). */
     val error: UiText? = null,
+    /** Set while the "these times don't add up" dialog is open. The user may still save. */
+    val mismatch: SleepGoalMismatch? = null,
     val saving: Boolean = false,
     val saved: Boolean = false,
 )
@@ -69,20 +71,35 @@ class EditSleepGoalViewModel(
 
     fun onSleepMinutesChange(minutes: Int?) = edit { it.copy(sleepMinutes = minutes) }
 
+    /** Validates, warns once if the times do not add up, and otherwise saves. */
     fun save() {
         val current = _state.value
-        val request =
-            SaveSleepGoalRequest(
-                bedtime = current.bedtime?.toKotlinLocalTime(),
-                wakeUpTime = current.wakeUpTime?.toKotlinLocalTime(),
-                sleepMinutes = current.sleepMinutes,
-            )
+        val request = current.toRequest()
         // Same validator as the server, before calling the API.
         val validation = SleepGoalValidation.save(request)
         if (validation is Invalid) {
             _state.update { it.copy(fieldErrors = validation.errors.byField()) }
             return
         }
+        val mismatch = checkSleepGoalFits(current.bedtime, current.wakeUpTime, current.sleepMinutes)
+        if (mismatch != null) {
+            _state.update { it.copy(mismatch = mismatch) }
+            return
+        }
+        send(request)
+    }
+
+    /** The user saw the warning and wants the goal as it is. */
+    fun saveAnyway() {
+        _state.update { it.copy(mismatch = null) }
+        send(_state.value.toRequest())
+    }
+
+    fun dismissMismatch() {
+        _state.update { it.copy(mismatch = null) }
+    }
+
+    private fun send(request: SaveSleepGoalRequest) {
         _state.update { it.copy(saving = true, fieldErrors = emptyMap(), error = null) }
         viewModelScope.launch {
             apiCall { api.saveGoal(request) }
@@ -99,6 +116,13 @@ class EditSleepGoalViewModel(
                 }
         }
     }
+
+    private fun EditSleepGoalState.toRequest() =
+        SaveSleepGoalRequest(
+            bedtime = bedtime?.toKotlinLocalTime(),
+            wakeUpTime = wakeUpTime?.toKotlinLocalTime(),
+            sleepMinutes = sleepMinutes,
+        )
 
     private fun edit(change: (EditSleepGoalState) -> EditSleepGoalState) {
         _state.update { change(it).copy(fieldErrors = emptyMap(), error = null) }

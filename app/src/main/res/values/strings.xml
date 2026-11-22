@@ -57,6 +57,10 @@
     <string name="sleep_goal_edit_title">Sleep goal</string>
     <string name="sleep_goal_unset_time" translatable="false">--:--</string>
     <string name="sleep_goal_unset_duration" translatable="false">--h --min</string>
+    <string name="sleep_goal_mismatch_title">These times don\'t add up</string>
+    <string name="sleep_goal_mismatch_body">From %1$s to %2$s you are in bed for %3$s, but the goal asks for %4$s of sleep. You can\'t sleep longer than you are in bed.</string>
+    <string name="sleep_goal_mismatch_review">Review goal</string>
+    <string name="sleep_goal_mismatch_save_anyway">Save anyway</string>
     <string name="sleep_goal_hint">All three are optional, but set at least one.</string>
     <string name="sleep_goal_bedtime_field">Bedtime (optional)</string>
     <string name="sleep_goal_wake_up_field">Wake up time (optional)</string>
