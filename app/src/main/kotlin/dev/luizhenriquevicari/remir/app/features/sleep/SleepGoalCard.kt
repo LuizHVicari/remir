@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import dev.luizhenriquevicari.remir.app.R
@@ -35,6 +37,9 @@ import kotlin.time.Instant
 
 /** Labels sit slightly back from the values, so the values read first. */
 private const val LABEL_ALPHA = 0.72f
+
+/** A value that is not set is fainter than a label, so it clearly reads as empty. */
+private const val UNSET_ALPHA = 0.4f
 
 /**
  * Call to action at the top of the Sleep tab. It uses the primary container colors, the same family as the
@@ -76,36 +81,38 @@ fun SleepGoalCard(
 @Composable
 private fun GoalValues(goal: SleepGoalDto) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        goal.bedtime?.let {
-            GoalValue(
-                icon = Icons.Filled.Bedtime,
-                label = stringResource(R.string.sleep_goal_bedtime),
-                value = it.toJavaLocalTime().toLocalizedTime(),
-            )
-        }
-        goal.wakeUpTime?.let {
-            GoalValue(
-                icon = Icons.Filled.WbSunny,
-                label = stringResource(R.string.sleep_goal_wake_up),
-                value = it.toJavaLocalTime().toLocalizedTime(),
-            )
-        }
-        goal.sleepMinutes?.let {
-            GoalValue(
-                icon = Icons.Filled.Schedule,
-                label = stringResource(R.string.sleep_goal_sleep),
-                value = it.minutes.asHoursAndMinutes(),
-            )
-        }
+        // All three always show, so the user sees what exists; the ones not set carry a muted placeholder.
+        GoalValue(
+            icon = Icons.Filled.Bedtime,
+            label = stringResource(R.string.sleep_goal_bedtime),
+            value = goal.bedtime?.toJavaLocalTime()?.toLocalizedTime(),
+            placeholder = stringResource(R.string.sleep_goal_unset_time),
+        )
+        GoalValue(
+            icon = Icons.Filled.WbSunny,
+            label = stringResource(R.string.sleep_goal_wake_up),
+            value = goal.wakeUpTime?.toJavaLocalTime()?.toLocalizedTime(),
+            placeholder = stringResource(R.string.sleep_goal_unset_time),
+        )
+        GoalValue(
+            icon = Icons.Filled.Schedule,
+            label = stringResource(R.string.sleep_goal_sleep),
+            value = goal.sleepMinutes?.minutes?.asHoursAndMinutes(),
+            placeholder = stringResource(R.string.sleep_goal_unset_duration),
+        )
     }
 }
 
-/** One goal value: a small icon and label over the value, which gets the display typeface. */
+/**
+ * One goal value: a small icon and label over the value, which gets the display typeface. A null [value] shows
+ * the muted [placeholder] instead, and screen readers hear "not set" and not the dashes.
+ */
 @Composable
 private fun RowScope.GoalValue(
     icon: ImageVector,
     label: String,
-    value: String,
+    value: String?,
+    placeholder: String,
 ) {
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -121,7 +128,17 @@ private fun RowScope.GoalValue(
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = LABEL_ALPHA),
             )
         }
-        Text(value, style = MaterialTheme.typography.headlineSmall)
+        if (value != null) {
+            Text(value, style = MaterialTheme.typography.headlineSmall)
+        } else {
+            val notSet = stringResource(R.string.sleep_not_set)
+            Text(
+                placeholder,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = UNSET_ALPHA),
+                modifier = Modifier.semantics { contentDescription = notSet },
+            )
+        }
     }
 }
 

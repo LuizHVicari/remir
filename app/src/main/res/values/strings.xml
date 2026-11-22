@@ -55,6 +55,8 @@
     <string name="sleep_goal_wake_up">Wake up</string>
     <string name="sleep_goal_sleep">Sleep</string>
     <string name="sleep_goal_edit_title">Sleep goal</string>
+    <string name="sleep_goal_unset_time" translatable="false">--:--</string>
+    <string name="sleep_goal_unset_duration" translatable="false">--h --min</string>
     <string name="sleep_goal_hint">All three are optional, but set at least one.</string>
     <string name="sleep_goal_bedtime_field">Bedtime (optional)</string>
     <string name="sleep_goal_wake_up_field">Wake up time (optional)</string>
