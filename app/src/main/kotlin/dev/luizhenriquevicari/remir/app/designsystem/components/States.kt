@@ -42,6 +42,20 @@ fun ErrorState(
     }
 }
 
+/** Placeholder body for a section that has no content yet. */
+@Composable
+fun ComingSoon(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(stringResource(R.string.coming_soon), style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ComingSoonPreview() {
+    RemirPreview { ComingSoon() }
+}
+
 @PreviewLightDark
 @Composable
 private fun LoadingPreview() {

@@ -2,6 +2,7 @@ package dev.luizhenriquevicari.remir.app.designsystem.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,13 +30,14 @@ import dev.luizhenriquevicari.remir.app.designsystem.RemirPreview
  * `@OptIn(ExperimentalMaterial3Api::class)`.
  *
  * The back action is an icon only (Material's navigation icon); the text lives in the content
- * description so screen readers still announce it.
+ * description so screen readers still announce it. [actions] are trailing icon buttons.
  */
 @Composable
 fun RemirTopBar(
     title: String,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {},
 ) {
     Surface(color = MaterialTheme.colorScheme.surface, modifier = modifier.fillMaxWidth()) {
         Row(
@@ -50,8 +52,9 @@ fun RemirTopBar(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(horizontal = 12.dp).semantics { heading() },
+                modifier = Modifier.weight(1f).padding(horizontal = 12.dp).semantics { heading() },
             )
+            actions()
         }
     }
 }

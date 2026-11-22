@@ -7,13 +7,13 @@
     <string name="error_network">No se pudo conectar con el servidor</string>
     <string name="error_unexpected">Error inesperado</string>
 
-    <string name="home_coming_soon">Próximamente.</string>
-    <string name="home_tab_sleep">Sueño</string>
-    <string name="home_tab_faith">Fe</string>
-    <string name="home_tab_finance">Finanzas</string>
-    <string name="home_tab_habits">Hábitos</string>
-    <string name="home_open_profile">Mi perfil</string>
-    <string name="home_open_legal_admin">Documentos legales</string>
+    <string name="coming_soon">Próximamente.</string>
+    <string name="open_profile">Mi perfil</string>
+
+    <string name="tab_sleep">Sueño</string>
+    <string name="tab_faith">Fe</string>
+    <string name="tab_finance">Finanzas</string>
+    <string name="tab_habits">Hábitos</string>
 
     <string name="legal_privacy_title">Política de Privacidad</string>
     <string name="legal_terms_title">Términos de Servicio</string>
@@ -36,4 +36,5 @@
     <string name="profile_saved">¡Guardado!</string>
     <string name="profile_sign_out">Cerrar sesión</string>
     <string name="profile_unavailable">Perfil no disponible</string>
+    <string name="profile_open_legal_admin">Documentos legales</string>
 </resources>
