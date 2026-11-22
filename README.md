@@ -183,7 +183,7 @@ The artifact is signed, because an unsigned APK cannot be installed. If a settin
 
 ```bash
 keytool -genkeypair -v -keystore remir-release.jks -alias remir -keyalg RSA -keysize 2048 -validity 10000
-base64 -w0 remir-release.jks | gh secret set ANDROID_KEYSTORE_BASE64
+base64 < remir-release.jks | tr -d '\n' | gh secret set ANDROID_KEYSTORE_BASE64   # works on macOS and Linux
 ```
 
 | Kind | Name | Where | Value |
