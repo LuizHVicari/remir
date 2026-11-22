@@ -1,12 +1,15 @@
 package dev.luizhenriquevicari.remir.server.features.sleep
 
 import dev.luizhenriquevicari.remir.core.sleep.CreateSleepRecordRequest
+import dev.luizhenriquevicari.remir.core.sleep.SaveSleepGoalRequest
+import dev.luizhenriquevicari.remir.core.sleep.SleepGoalDto
 import dev.luizhenriquevicari.remir.core.sleep.SleepRecordDto
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
@@ -48,6 +51,37 @@ class SleepRepository {
             createdAt = now,
         )
     }
+
+    fun findGoal(userId: String): SleepGoalDto? =
+        SleepGoalsTable
+            .selectAll()
+            .where { SleepGoalsTable.userId eq userId }
+            .singleOrNull()
+            ?.toGoalDto()
+
+    /** Creates the goal or replaces it as a whole: a part left null is cleared. */
+    fun saveGoal(
+        userId: String,
+        request: SaveSleepGoalRequest,
+        now: Instant,
+    ): SleepGoalDto {
+        SleepGoalsTable.upsert {
+            it[SleepGoalsTable.userId] = userId
+            it[bedtime] = request.bedtime
+            it[wakeUpTime] = request.wakeUpTime
+            it[sleepMinutes] = request.sleepMinutes
+            it[updatedAt] = now
+        }
+        return SleepGoalDto(request.bedtime, request.wakeUpTime, request.sleepMinutes, now)
+    }
+
+    private fun ResultRow.toGoalDto() =
+        SleepGoalDto(
+            bedtime = this[SleepGoalsTable.bedtime],
+            wakeUpTime = this[SleepGoalsTable.wakeUpTime],
+            sleepMinutes = this[SleepGoalsTable.sleepMinutes],
+            updatedAt = this[SleepGoalsTable.updatedAt],
+        )
 
     private fun ResultRow.toDto() =
         SleepRecordDto(

@@ -1,6 +1,9 @@
 package dev.luizhenriquevicari.remir.server.features.sleep
 
 import dev.luizhenriquevicari.remir.core.sleep.CreateSleepRecordRequest
+import dev.luizhenriquevicari.remir.core.sleep.SaveSleepGoalRequest
+import dev.luizhenriquevicari.remir.core.sleep.SleepGoalResource
+import dev.luizhenriquevicari.remir.core.sleep.SleepGoalValidation
 import dev.luizhenriquevicari.remir.core.sleep.SleepResource
 import dev.luizhenriquevicari.remir.core.sleep.SleepValidation
 import dev.luizhenriquevicari.remir.server.common.orThrow
@@ -9,6 +12,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
+import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 
@@ -21,5 +25,14 @@ fun Route.sleepRoutes(service: SleepService) {
     post<SleepResource> {
         val request = SleepValidation.create.orThrow(call.receive<CreateSleepRecordRequest>())
         call.respond(HttpStatusCode.Created, service.create(call.userId(), request))
+    }
+
+    get<SleepGoalResource> {
+        call.respond(service.goal(call.userId()))
+    }
+
+    put<SleepGoalResource> {
+        val request = SleepGoalValidation.save.orThrow(call.receive<SaveSleepGoalRequest>())
+        call.respond(service.saveGoal(call.userId(), request))
     }
 }

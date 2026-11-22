@@ -1,7 +1,10 @@
 package dev.luizhenriquevicari.remir.server.features.sleep
 
 import dev.luizhenriquevicari.remir.core.sleep.CreateSleepRecordRequest
+import dev.luizhenriquevicari.remir.core.sleep.SaveSleepGoalRequest
+import dev.luizhenriquevicari.remir.core.sleep.SleepGoalDto
 import dev.luizhenriquevicari.remir.core.sleep.SleepRecordDto
+import dev.luizhenriquevicari.remir.server.common.NotFound
 import dev.luizhenriquevicari.remir.server.db.dbQuery
 import dev.luizhenriquevicari.remir.server.features.profile.ProfileRepository
 import kotlin.time.Clock
@@ -13,6 +16,19 @@ class SleepService(
     private val clock: Clock = Clock.System,
 ) {
     suspend fun list(userId: String): List<SleepRecordDto> = dbQuery { repository.list(userId) }
+
+    suspend fun goal(userId: String): SleepGoalDto =
+        dbQuery { repository.findGoal(userId) ?: throw NotFound("No sleep goal set") }
+
+    suspend fun saveGoal(
+        userId: String,
+        request: SaveSleepGoalRequest,
+    ): SleepGoalDto =
+        dbQuery {
+            val now = clock.now()
+            profileRepository.provision(userId, now)
+            repository.saveGoal(userId, request, now)
+        }
 
     suspend fun create(
         userId: String,

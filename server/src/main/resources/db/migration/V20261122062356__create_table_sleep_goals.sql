@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS sleep_goals (user_id VARCHAR(64) PRIMARY KEY, bedtime TIME NULL, wake_up_time TIME NULL, sleep_minutes INT NULL, updated_at TIMESTAMP WITH TIME ZONE NOT NULL, CONSTRAINT fk_sleep_goals_user_id__id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT);
