@@ -1,22 +1,14 @@
 package dev.luizhenriquevicari.remir.app.features.sleep
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,9 +17,6 @@ import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.Zoom
 import com.patrykandpatrick.vico.compose.cartesian.axis.Axis
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisGuidelineComponent
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModel
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
@@ -49,27 +38,19 @@ import com.patrykandpatrick.vico.compose.common.component.ShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
-import dev.luizhenriquevicari.remir.app.R
 import dev.luizhenriquevicari.remir.app.common.toLocalizedDate
 import dev.luizhenriquevicari.remir.app.common.toLocalizedTime
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
-private const val CHART_HEIGHT_DP = 210
-
-/** What the tooltip says for each line, in the order of the chart's layers (bedtime first). */
-private class Labels(
-    val bedtime: String,
-    val wakeUp: String,
-    val formatBedtime: (Int) -> String,
-    val formatWakeUp: (Int) -> String,
-)
+private const val CHART_HEIGHT_DP = 140
+private const val TOOLTIP_LINES = 2
 
 /**
- * Bedtime and wake up time on one line chart. Both are times of day but at opposite ends of it (about 11 pm and
- * 7 am), so each line has its own vertical axis (bedtime on the left, wake up on the right) and neither ends up
- * flat. Pressing the chart shows a tooltip with the day and both times, and a dot on each line.
- * It fits the card's width instead of scrolling, even for a year.
+ * Bedtime and wake up time as two plain lines, with no vertical axes or grid: what matters is the trend, and
+ * pressing the chart shows the exact day and times in a tooltip, with a dot on each line. Bedtimes (about 11 pm)
+ * and wake up times (about 7 am) are far apart on the clock, so each line is drawn on its own scale. The icons of
+ * the averages above carry the lines' colors, so there is no legend.
  */
 @Composable
 internal fun SleepTimesChart(
@@ -78,54 +59,8 @@ internal fun SleepTimesChart(
     bedtimeColor: Color,
     wakeUpColor: Color,
 ) {
-    val labels =
-        Labels(
-            bedtime = stringResource(R.string.sleep_chart_bedtime),
-            wakeUp = stringResource(R.string.sleep_chart_wake_up),
-            formatBedtime = { bedtimeFromAxis(it).toLocalizedTime() },
-            formatWakeUp = { timeOfDay(it).toLocalizedTime() },
-        )
-    // The legend sits in the band at the top of the chart that Vico reserves for the tooltip. It is drawn first, so
-    // the tooltip (and the chart, which is transparent) goes over it while the user presses the chart.
-    Box {
-        Legend(labels, bedtimeColor, wakeUpColor, Modifier.align(Alignment.TopStart))
-        // Vico cannot draw a series with no points.
-        if (summary.bedtimePoints.isNotEmpty()) ChartHost(summary, period, labels, bedtimeColor, wakeUpColor)
-    }
-}
-
-@Composable
-private fun Legend(
-    labels: Labels,
-    bedtimeColor: Color,
-    wakeUpColor: Color,
-    modifier: Modifier = Modifier,
-) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-        LegendItem(labels.bedtime, bedtimeColor)
-        LegendItem(labels.wakeUp, wakeUpColor)
-    }
-}
-
-@Composable
-private fun LegendItem(
-    label: String,
-    color: Color,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(10.dp).background(color, CircleShape))
-        Text(label, style = MaterialTheme.typography.labelMedium)
-    }
-}
-
-@Composable
-private fun ChartHost(
-    summary: SleepSummary,
-    period: SummaryPeriod,
-    labels: Labels,
-    bedtimeColor: Color,
-    wakeUpColor: Color,
-) {
+    // Vico cannot draw a series with no points.
+    if (summary.bedtimePoints.isEmpty()) return
     ProvideVicoTheme(rememberM3VicoTheme()) {
         // The points are plain data, so the model is built directly instead of through a model producer.
         val model =
@@ -136,7 +71,7 @@ private fun ChartHost(
                 )
             }
         CartesianChartHost(
-            chart = rememberSleepTimesChart(summary, period, labels, bedtimeColor, wakeUpColor),
+            chart = rememberChart(summary, period, bedtimeColor, wakeUpColor),
             model = model,
             modifier = Modifier.fillMaxWidth().height(CHART_HEIGHT_DP.dp),
             scrollState = rememberVicoScrollState(scrollEnabled = false),
@@ -149,45 +84,31 @@ private fun LineCartesianLayerModel.BuilderScope.seriesOf(points: List<ChartPoin
     series(x = points.map { it.day }, y = points.map { it.minutes })
 
 @Composable
-private fun rememberSleepTimesChart(
+private fun rememberChart(
     summary: SleepSummary,
     period: SummaryPeriod,
-    labels: Labels,
     bedtimeColor: Color,
     wakeUpColor: Color,
-): CartesianChart {
-    val bedtimeRange = hourRange(summary.bedtimePoints)
-    val wakeUpRange = hourRange(summary.wakeUpPoints)
-    return rememberCartesianChart(
-        lineLayer(bedtimeColor, bedtimeRange, Axis.Position.Vertical.Start),
-        lineLayer(wakeUpColor, wakeUpRange, Axis.Position.Vertical.End),
-        startAxis =
-            VerticalAxis.rememberStart(
-                label = rememberAxisLabelComponent(TextStyle(color = bedtimeColor, fontSize = 11.sp)),
-                valueFormatter = CartesianValueFormatter { _, value, _ -> labels.formatBedtime(value.roundToInt()) },
-                itemPlacer = remember(bedtimeRange) { hourlyItemPlacer(bedtimeRange) },
-            ),
-        endAxis =
-            VerticalAxis.rememberEnd(
-                label = rememberAxisLabelComponent(TextStyle(color = wakeUpColor, fontSize = 11.sp)),
-                valueFormatter = CartesianValueFormatter { _, value, _ -> labels.formatWakeUp(value.roundToInt()) },
-                // The left axis already draws the horizontal guidelines; a second set would clutter the chart.
-                guideline = null,
-                itemPlacer = remember(wakeUpRange) { hourlyItemPlacer(wakeUpRange) },
-            ),
+): CartesianChart =
+    rememberCartesianChart(
+        lineLayer(bedtimeColor, hourRange(summary.bedtimePoints), Axis.Position.Vertical.Start),
+        lineLayer(wakeUpColor, hourRange(summary.wakeUpPoints), Axis.Position.Vertical.End),
+        // Only the days, no axis line, ticks or grid.
         bottomAxis =
             HorizontalAxis.rememberBottom(
+                line = null,
+                tick = null,
+                guideline = null,
                 valueFormatter = CartesianValueFormatter { _, value, _ -> dayLabel(period, value.toLong()) },
                 itemPlacer =
                     remember(
                         period,
                     ) { HorizontalAxis.ItemPlacer.aligned(spacing = { period.labelSpacingDays }) },
             ),
-        marker = rememberTooltip(labels),
+        marker = rememberTooltip(),
         // One x step is one day, so the gaps between nights show up as gaps in the line.
         getXStep = { _, _, _ -> 1.0 },
     )
-}
 
 @Composable
 private fun lineLayer(
@@ -208,15 +129,12 @@ private fun lineLayer(
     )
 
 /**
- * The tooltip shown while pressing the chart: the day and both times, in the inverse colors so it stands out from
- * the card, with a dot on each line in that line's color and a vertical guide at the day.
+ * Shown while pressing the chart: the day and "bedtime → wake up", in the inverse colors so it stands out from the
+ * card. Each line gets a dot in its color, which also tells the arrow's two times apart.
  */
 @Composable
-private fun rememberTooltip(labels: Labels): DefaultCartesianMarker {
-    val formatter =
-        remember(labels) {
-            DefaultCartesianMarker.ValueFormatter { _, targets -> tooltipText(labels, targets) }
-        }
+private fun rememberTooltip(): DefaultCartesianMarker {
+    val formatter = remember { DefaultCartesianMarker.ValueFormatter { _, targets -> tooltipText(targets) } }
     return rememberDefaultCartesianMarker(
         label =
             rememberTextComponent(
@@ -230,21 +148,14 @@ private fun rememberTooltip(labels: Labels): DefaultCartesianMarker {
                     ),
             ),
         valueFormatter = formatter,
-        // At the top, in a band the chart reserves for it, so the tooltip never covers a dot (next to the points it
-        // would, whenever the highest one is too close to the top).
-        labelPosition = DefaultCartesianMarker.LabelPosition.Top,
+        // Next to the points, so the chart does not reserve an empty band at the top of the card for it.
+        labelPosition = DefaultCartesianMarker.LabelPosition.AroundPoint,
         indicator = { color -> ShapeComponent(fill = Fill(color), shape = CircleShape) },
         indicatorSize = 10.dp,
-        guideline = rememberAxisGuidelineComponent(),
     )
 }
 
-private const val TOOLTIP_LINES = 3
-
-private fun tooltipText(
-    labels: Labels,
-    targets: List<CartesianMarker.Target>,
-): CharSequence {
+private fun tooltipText(targets: List<CartesianMarker.Target>): CharSequence {
     val lines = targets.filterIsInstance<LineCartesianLayerMarkerTarget>()
     val day = targets.firstOrNull()?.let { LocalDate.ofEpochDay(it.x.toLong()).toLocalizedDate() }.orEmpty()
 
@@ -257,9 +168,7 @@ private fun tooltipText(
             ?.entry
             ?.y
             ?.roundToInt()
-    return listOfNotNull(
-        day,
-        minutesOf(0)?.let { "${labels.bedtime}: ${labels.formatBedtime(it)}" },
-        minutesOf(1)?.let { "${labels.wakeUp}: ${labels.formatWakeUp(it)}" },
-    ).joinToString("\n")
+    val bedtime = minutesOf(0)?.let { bedtimeFromAxis(it).toLocalizedTime() }
+    val wakeUp = minutesOf(1)?.let { timeOfDay(it).toLocalizedTime() }
+    return listOfNotNull(day, listOfNotNull(bedtime, wakeUp).joinToString(" → ").ifEmpty { null }).joinToString("\n")
 }

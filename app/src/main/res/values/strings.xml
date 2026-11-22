@@ -54,13 +54,7 @@
     <string name="sleep_period_year">Year</string>
     <string name="sleep_summary_avg_bedtime">Avg. bedtime</string>
     <string name="sleep_summary_avg_wake_up">Avg. wake up</string>
-    <plurals name="sleep_summary_nights">
-        <item quantity="one">Based on %d night</item>
-        <item quantity="other">Based on %d nights</item>
-    </plurals>
     <string name="sleep_summary_empty">No nights logged in this period.</string>
-    <string name="sleep_chart_bedtime">Bedtime</string>
-    <string name="sleep_chart_wake_up">Wake up</string>
 
     <string name="sleep_goal_cta_title">Set your sleep goal</string>
     <string name="sleep_goal_cta_body">Choose a bedtime, a wake up time or how long you want to sleep.</string>

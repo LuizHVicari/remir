@@ -20,7 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
@@ -86,6 +85,9 @@ private fun SummaryContent(
     period: SummaryPeriod,
 ) {
     val onCard = MaterialTheme.colorScheme.onSurface
+    // The icons of the averages are tinted like the chart lines, which is what tells the lines apart.
+    val bedtimeColor = MaterialTheme.colorScheme.primary
+    val wakeUpColor = MaterialTheme.colorScheme.tertiary
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         LabeledValue(
             icon = Icons.Filled.Bedtime,
@@ -93,6 +95,7 @@ private fun SummaryContent(
             value = summary.averageBedtime?.toLocalizedTime(),
             placeholder = stringResource(R.string.sleep_goal_unset_time),
             contentColor = onCard,
+            iconTint = bedtimeColor,
         )
         LabeledValue(
             icon = Icons.Filled.WbSunny,
@@ -100,19 +103,10 @@ private fun SummaryContent(
             value = summary.averageWakeUpTime?.toLocalizedTime(),
             placeholder = stringResource(R.string.sleep_goal_unset_time),
             contentColor = onCard,
+            iconTint = wakeUpColor,
         )
     }
-    Text(
-        pluralStringResource(R.plurals.sleep_summary_nights, summary.nights, summary.nights),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    SleepTimesChart(
-        summary = summary,
-        period = period,
-        bedtimeColor = MaterialTheme.colorScheme.primary,
-        wakeUpColor = MaterialTheme.colorScheme.tertiary,
-    )
+    SleepTimesChart(summary = summary, period = period, bedtimeColor = bedtimeColor, wakeUpColor = wakeUpColor)
 }
 
 private fun sampleNight(

@@ -33,7 +33,8 @@ private const val UNSET_ALPHA = 0.4f
 /**
  * One value of the Sleep tab: a small icon and label over the value, which gets the display typeface. Shared by the
  * goal card and the summary; [contentColor] is the color of the card it sits on. A null [value] shows the muted
- * [placeholder] instead, and screen readers hear "not set" and not the dashes.
+ * [placeholder] instead, and screen readers hear "not set" and not the dashes. [iconTint] colors the icon, for when
+ * it also stands for something else (the summary tints it like the chart line the value belongs to).
  */
 @Composable
 internal fun RowScope.LabeledValue(
@@ -42,6 +43,7 @@ internal fun RowScope.LabeledValue(
     value: String?,
     placeholder: String,
     contentColor: Color,
+    iconTint: Color = contentColor.copy(alpha = LABEL_ALPHA),
 ) {
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -49,7 +51,7 @@ internal fun RowScope.LabeledValue(
                 icon,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
-                tint = contentColor.copy(alpha = LABEL_ALPHA),
+                tint = iconTint,
             )
             Text(label, style = MaterialTheme.typography.labelMedium, color = contentColor.copy(alpha = LABEL_ALPHA))
         }

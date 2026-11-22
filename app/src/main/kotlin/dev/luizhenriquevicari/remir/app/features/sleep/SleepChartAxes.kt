@@ -1,32 +1,21 @@
 package dev.luizhenriquevicari.remir.app.features.sleep
 
-import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
 private const val MINUTES_PER_HOUR = 60
-private const val MAX_HOURLY_RANGE_HOURS = 6
 
-/** The vertical range, widened to whole hours and at least one hour tall, so the line never sits on an edge. */
+/**
+ * The vertical range of a line: widened to whole hours, plus one more hour above the highest point, which is where
+ * the tooltip goes. So it is always more than an hour tall, which also stops a line that barely varies from looking
+ * like it swings wildly.
+ */
 internal fun hourRange(points: List<ChartPoint>): IntRange {
     val low = points.minOf { it.minutes } / MINUTES_PER_HOUR * MINUTES_PER_HOUR
     val high = (points.maxOf { it.minutes } + MINUTES_PER_HOUR - 1) / MINUTES_PER_HOUR * MINUTES_PER_HOUR
-    return low..maxOf(high, low + MINUTES_PER_HOUR)
-}
-
-/** Hourly labels, or every two hours when the range is tall enough for them to crowd each other. */
-internal fun hourlyItemPlacer(range: IntRange): VerticalAxis.ItemPlacer {
-    val step =
-        if (range.last - range.first >
-            MAX_HOURLY_RANGE_HOURS * MINUTES_PER_HOUR
-        ) {
-            2 * MINUTES_PER_HOUR
-        } else {
-            MINUTES_PER_HOUR
-        }
-    return VerticalAxis.ItemPlacer.step({ step.toDouble() })
+    return low..(high + MINUTES_PER_HOUR)
 }
 
 /** The label of a day along the bottom axis, as short as the period allows. */

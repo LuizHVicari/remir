@@ -52,14 +52,7 @@
     <string name="sleep_period_year">Año</string>
     <string name="sleep_summary_avg_bedtime">Acostarse (media)</string>
     <string name="sleep_summary_avg_wake_up">Despertar (media)</string>
-    <plurals name="sleep_summary_nights">
-        <item quantity="one">Basado en %d noche</item>
-        <item quantity="many">Basado en %d noches</item>
-        <item quantity="other">Basado en %d noches</item>
-    </plurals>
     <string name="sleep_summary_empty">Ninguna noche registrada en este período.</string>
-    <string name="sleep_chart_bedtime">Hora de acostarse</string>
-    <string name="sleep_chart_wake_up">Hora de despertarse</string>
 
     <string name="sleep_goal_cta_title">Define tu meta de sueño</string>
     <string name="sleep_goal_cta_body">Elige una hora de acostarte, de despertarte o cuánto quieres dormir.</string>
