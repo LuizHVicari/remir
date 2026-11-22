@@ -3,10 +3,8 @@ package dev.luizhenriquevicari.remir.app.features.sleep
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Edit
@@ -20,10 +18,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import dev.luizhenriquevicari.remir.app.R
@@ -34,12 +30,6 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.toJavaLocalTime
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
-
-/** Labels sit slightly back from the values, so the values read first. */
-private const val LABEL_ALPHA = 0.72f
-
-/** A value that is not set is fainter than a label, so it clearly reads as empty. */
-private const val UNSET_ALPHA = 0.4f
 
 /**
  * Call to action at the top of the Sleep tab. It uses the primary container colors, the same family as the
@@ -82,63 +72,28 @@ fun SleepGoalCard(
 private fun GoalValues(goal: SleepGoalDto) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         // All three always show, so the user sees what exists; the ones not set carry a muted placeholder.
-        GoalValue(
+        val color = MaterialTheme.colorScheme.onPrimaryContainer
+        LabeledValue(
             icon = Icons.Filled.Bedtime,
             label = stringResource(R.string.sleep_goal_bedtime),
             value = goal.bedtime?.toJavaLocalTime()?.toLocalizedTime(),
             placeholder = stringResource(R.string.sleep_goal_unset_time),
+            contentColor = color,
         )
-        GoalValue(
+        LabeledValue(
             icon = Icons.Filled.WbSunny,
             label = stringResource(R.string.sleep_goal_wake_up),
             value = goal.wakeUpTime?.toJavaLocalTime()?.toLocalizedTime(),
             placeholder = stringResource(R.string.sleep_goal_unset_time),
+            contentColor = color,
         )
-        GoalValue(
+        LabeledValue(
             icon = Icons.Filled.Schedule,
             label = stringResource(R.string.sleep_goal_sleep),
             value = goal.sleepMinutes?.minutes?.asHoursAndMinutes(),
             placeholder = stringResource(R.string.sleep_goal_unset_duration),
+            contentColor = color,
         )
-    }
-}
-
-/**
- * One goal value: a small icon and label over the value, which gets the display typeface. A null [value] shows
- * the muted [placeholder] instead, and screen readers hear "not set" and not the dashes.
- */
-@Composable
-private fun RowScope.GoalValue(
-    icon: ImageVector,
-    label: String,
-    value: String?,
-    placeholder: String,
-) {
-    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Icon(
-                icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = LABEL_ALPHA),
-            )
-            Text(
-                label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = LABEL_ALPHA),
-            )
-        }
-        if (value != null) {
-            Text(value, style = MaterialTheme.typography.headlineSmall)
-        } else {
-            val notSet = stringResource(R.string.sleep_not_set)
-            Text(
-                placeholder,
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = UNSET_ALPHA),
-                modifier = Modifier.semantics { contentDescription = notSet },
-            )
-        }
     }
 }
 

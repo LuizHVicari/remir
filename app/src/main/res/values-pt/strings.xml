@@ -45,6 +45,22 @@
     <string name="sleep_slept">Dormiu %1$s</string>
     <string name="sleep_duration">%1$dh %2$02dmin</string>
 
+    <string name="sleep_summary_title">Resumo</string>
+    <string name="sleep_period_week">Semana</string>
+    <string name="sleep_period_month">Mês</string>
+    <string name="sleep_period_three_months">3 meses</string>
+    <string name="sleep_period_year">Ano</string>
+    <string name="sleep_summary_avg_bedtime">Dormir (média)</string>
+    <string name="sleep_summary_avg_wake_up">Acordar (média)</string>
+    <plurals name="sleep_summary_nights">
+        <item quantity="one">Com base em %d noite</item>
+        <item quantity="many">Com base em %d noites</item>
+        <item quantity="other">Com base em %d noites</item>
+    </plurals>
+    <string name="sleep_summary_empty">Nenhuma noite registrada neste período.</string>
+    <string name="sleep_chart_bedtime">Horário de dormir</string>
+    <string name="sleep_chart_wake_up">Horário de acordar</string>
+
     <string name="sleep_goal_cta_title">Defina sua meta de sono</string>
     <string name="sleep_goal_cta_body">Escolha um horário de dormir, de acordar ou quanto tempo você quer dormir.</string>
     <string name="sleep_goal_title">Minha meta de sono</string>

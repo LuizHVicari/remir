@@ -59,6 +59,7 @@ fun SleepRoute(
         onOpenProfile = onOpenProfile,
         onLogSleep = onLogSleep,
         onEditGoal = onEditGoal,
+        onPeriodChange = viewModel::onPeriodChange,
         onRetry = viewModel::retry,
     )
 }
@@ -70,6 +71,7 @@ fun SleepScreen(
     onOpenProfile: () -> Unit,
     onLogSleep: () -> Unit,
     onEditGoal: () -> Unit,
+    onPeriodChange: (SummaryPeriod) -> Unit,
     onRetry: () -> Unit,
 ) {
     TabScaffold(
@@ -87,7 +89,7 @@ fun SleepScreen(
         when {
             state.loading -> Loading(modifier)
             state.error != null && state.records.isEmpty() -> ErrorState(state.error.asString(), modifier, onRetry)
-            else -> SleepList(state, onEditGoal, modifier)
+            else -> SleepList(state, onEditGoal, onPeriodChange, modifier)
         }
     }
 }
@@ -96,6 +98,7 @@ fun SleepScreen(
 private fun SleepList(
     state: SleepState,
     onEditGoal: () -> Unit,
+    onPeriodChange: (SummaryPeriod) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -105,6 +108,14 @@ private fun SleepList(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { SleepGoalCard(goal = state.goal, onEdit = onEditGoal) }
+        item {
+            SleepSummaryCard(
+                summary = state.summary,
+                period = state.period,
+                loading = state.summaryLoading,
+                onPeriodChange = onPeriodChange,
+            )
+        }
         if (state.records.isEmpty()) {
             item { Text(stringResource(R.string.sleep_empty), style = MaterialTheme.typography.bodyLarge) }
         }
@@ -171,6 +182,7 @@ private fun SleepScreenPreview() {
             onOpenProfile = {},
             onLogSleep = {},
             onEditGoal = {},
+            onPeriodChange = {},
             onRetry = {},
         )
     }
@@ -185,6 +197,7 @@ private fun SleepScreenNoGoalPreview() {
             onOpenProfile = {},
             onLogSleep = {},
             onEditGoal = {},
+            onPeriodChange = {},
             onRetry = {},
         )
     }
@@ -199,6 +212,7 @@ private fun SleepScreenEmptyPreview() {
             onOpenProfile = {},
             onLogSleep = {},
             onEditGoal = {},
+            onPeriodChange = {},
             onRetry = {},
         )
     }
@@ -208,6 +222,13 @@ private fun SleepScreenEmptyPreview() {
 @Composable
 private fun SleepScreenLoadingPreview() {
     RemirPreview {
-        SleepScreen(SleepState(), onOpenProfile = {}, onLogSleep = {}, onEditGoal = {}, onRetry = {})
+        SleepScreen(
+            SleepState(),
+            onOpenProfile = {},
+            onLogSleep = {},
+            onEditGoal = {},
+            onPeriodChange = {},
+            onRetry = {},
+        )
     }
 }

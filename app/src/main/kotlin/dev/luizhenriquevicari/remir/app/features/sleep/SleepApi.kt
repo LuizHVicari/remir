@@ -14,12 +14,14 @@ import io.ktor.client.plugins.resources.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlin.time.Instant
 
 /** HTTP calls of the feature, built on the `core` Resources. Errors surface as `ApiException`. */
 class SleepApi(
     private val client: HttpClient,
 ) {
-    suspend fun list(): List<SleepRecordDto> = client.get(SleepResource()).body()
+    /** The latest nights, or every night that started at or after [since]. */
+    suspend fun list(since: Instant? = null): List<SleepRecordDto> = client.get(SleepResource(since)).body()
 
     /** Fails with a 404 `ApiException` while the user has no goal. */
     suspend fun goal(): SleepGoalDto = client.get(SleepGoalResource()).body()

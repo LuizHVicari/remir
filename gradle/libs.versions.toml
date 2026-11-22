@@ -17,6 +17,7 @@ android-minSdk = "26"
 kotlinx-serialization = "1.13.0"
 kotlinx-coroutines = "1.11.0"
 kotlinx-datetime = "0.8.0"
+vico = "3.3.1"
 ktor = "3.6.1"
 konform = "0.11.1"
 
@@ -105,6 +106,7 @@ compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview"
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
 compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+vico-compose-m3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "vico" }
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-android = { module = "io.insert-koin:koin-android" }
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose" }
