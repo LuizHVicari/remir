@@ -30,7 +30,8 @@ import dev.luizhenriquevicari.remir.app.features.habits.HabitsScreen
 import dev.luizhenriquevicari.remir.app.features.legal.AdminLegalRoute
 import dev.luizhenriquevicari.remir.app.features.legal.LegalGate
 import dev.luizhenriquevicari.remir.app.features.profile.ProfileRoute
-import dev.luizhenriquevicari.remir.app.features.sleep.SleepScreen
+import dev.luizhenriquevicari.remir.app.features.sleep.LogSleepRoute
+import dev.luizhenriquevicari.remir.app.features.sleep.SleepRoute
 import dev.luizhenriquevicari.remir.app.navigation.Destination
 import dev.luizhenriquevicari.remir.app.navigation.RemirNavigationBar
 import dev.luizhenriquevicari.remir.app.navigation.TopLevelDestination
@@ -87,7 +88,13 @@ private fun RemirNavHost() {
             startDestination = Destination.Sleep,
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
         ) {
-            composable<Destination.Sleep> { SleepScreen(onOpenProfile = openProfile) }
+            composable<Destination.Sleep> {
+                SleepRoute(
+                    onOpenProfile = openProfile,
+                    onLogSleep = { navController.navigate(Destination.LogSleep) },
+                )
+            }
+            composable<Destination.LogSleep> { LogSleepRoute(onBack = { navController.popBackStack() }) }
             composable<Destination.Faith> { FaithScreen(onOpenProfile = openProfile) }
             composable<Destination.Finance> { FinanceScreen(onOpenProfile = openProfile) }
             composable<Destination.Habits> { HabitsScreen(onOpenProfile = openProfile) }

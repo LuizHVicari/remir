@@ -16,11 +16,15 @@ import dev.luizhenriquevicari.remir.app.designsystem.RemirPreview
 import dev.luizhenriquevicari.remir.app.designsystem.components.ComingSoon
 import dev.luizhenriquevicari.remir.app.designsystem.components.RemirTopBar
 
-/** Layout shared by the [TopLevelDestination] screens: a top bar with the profile shortcut plus the content. */
+/**
+ * Layout shared by the [TopLevelDestination] screens: a top bar with the profile shortcut, an optional
+ * [floatingActionButton] and the content.
+ */
 @Composable
 fun TabScaffold(
     title: String,
     onOpenProfile: () -> Unit,
+    floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -34,6 +38,7 @@ fun TabScaffold(
                 },
             )
         },
+        floatingActionButton = floatingActionButton,
         content = content,
     )
 }

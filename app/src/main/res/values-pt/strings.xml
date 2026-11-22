@@ -4,6 +4,9 @@
     <string name="clerk_init_failed">Não foi possível iniciar o Clerk: %1$s</string>
     <string name="retry">Tentar novamente</string>
     <string name="back">Voltar</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancelar</string>
+    <string name="clear">Limpar</string>
     <string name="error_network">Não foi possível conectar ao servidor</string>
     <string name="error_unexpected">Erro inesperado</string>
 
@@ -27,6 +30,20 @@
     <string name="legal_admin_not_published">Ainda não publicado</string>
     <string name="legal_admin_current_version">Versão atual: %1$d</string>
     <string name="legal_admin_published">Versão %1$d publicada</string>
+
+    <string name="sleep_log">Registrar sono</string>
+    <string name="sleep_log_title">Registrar sono</string>
+    <string name="sleep_empty">Nenhuma noite registrada ainda. Toque em "Registrar sono" para adicionar a primeira.</string>
+    <string name="sleep_went_to_bed_date">Foi dormir (data)</string>
+    <string name="sleep_went_to_bed">Foi dormir</string>
+    <string name="sleep_fell_asleep">Pegou no sono (opcional)</string>
+    <string name="sleep_not_set">Não informado</string>
+    <string name="sleep_woke_up">Acordou</string>
+    <string name="sleep_got_up">Levantou</string>
+    <string name="sleep_save">Salvar</string>
+    <string name="sleep_in_bed">%1$s – %2$s</string>
+    <string name="sleep_slept">Dormiu %1$s</string>
+    <string name="sleep_duration">%1$dh %2$02dmin</string>
 
     <string name="profile_title">Perfil</string>
     <string name="profile_no_name">Ainda sem nome</string>

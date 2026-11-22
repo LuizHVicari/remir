@@ -17,6 +17,9 @@ sealed interface Destination {
     data object Habits : Destination
 
     @Serializable
+    data object LogSleep : Destination
+
+    @Serializable
     data object Profile : Destination
 
     @Serializable

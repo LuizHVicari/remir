@@ -6,6 +6,9 @@
     <string name="clerk_init_failed">Could not start Clerk: %1$s</string>
     <string name="retry">Try again</string>
     <string name="back">Back</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="clear">Clear</string>
     <string name="error_network">Could not reach the server</string>
     <string name="error_unexpected">Unexpected error</string>
 
@@ -29,6 +32,20 @@
     <string name="legal_admin_not_published">Not published yet</string>
     <string name="legal_admin_current_version">Current version: %1$d</string>
     <string name="legal_admin_published">Published version %1$d</string>
+
+    <string name="sleep_log">Log sleep</string>
+    <string name="sleep_log_title">Log sleep</string>
+    <string name="sleep_empty">No nights logged yet. Tap "Log sleep" to add the first one.</string>
+    <string name="sleep_went_to_bed_date">Went to bed (date)</string>
+    <string name="sleep_went_to_bed">Went to bed</string>
+    <string name="sleep_fell_asleep">Fell asleep (optional)</string>
+    <string name="sleep_not_set">Not set</string>
+    <string name="sleep_woke_up">Woke up</string>
+    <string name="sleep_got_up">Got out of bed</string>
+    <string name="sleep_save">Save</string>
+    <string name="sleep_in_bed">%1$s – %2$s</string>
+    <string name="sleep_slept">Slept %1$s</string>
+    <string name="sleep_duration">%1$dh %2$02dmin</string>
 
     <string name="profile_title">Profile</string>
     <string name="profile_no_name">No name yet</string>
