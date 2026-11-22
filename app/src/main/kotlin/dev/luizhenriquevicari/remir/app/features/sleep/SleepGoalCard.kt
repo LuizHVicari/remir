@@ -1,20 +1,29 @@
 package dev.luizhenriquevicari.remir.app.features.sleep
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
@@ -27,10 +36,14 @@ import kotlinx.datetime.toJavaLocalTime
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
+/** Labels and the edit badge sit slightly back from the values, so the values read first. */
+private const val LABEL_ALPHA = 0.72f
+private const val BADGE_ALPHA = 0.12f
+
 /**
  * Call to action at the top of the Sleep tab. It uses the primary container colors, the same family as the
  * floating button, so it stands out from the night cards. Without a [goal] it invites the user to set one; with
- * one it shows the goal. Either way the whole card opens the editor.
+ * one it shows the goal as up to three values side by side. Either way the whole card opens the editor.
  */
 @Composable
 fun SleepGoalCard(
@@ -47,39 +60,89 @@ fun SleepGoalCard(
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ),
     ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (goal == null) GoalInvitation() else GoalSummary(goal)
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    val title = if (goal == null) R.string.sleep_goal_cta_title else R.string.sleep_goal_title
+                    Text(stringResource(title), style = MaterialTheme.typography.titleLarge)
+                    if (goal == null) {
+                        Text(stringResource(R.string.sleep_goal_cta_body), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+                EditBadge()
             }
-            Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.sleep_goal_edit))
+            goal?.let { GoalValues(it) }
+        }
+    }
+}
+
+/** The edit affordance: a pencil in a soft circle, so it reads as a control and not as decoration. */
+@Composable
+private fun EditBadge() {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = BADGE_ALPHA),
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    ) {
+        Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+            Icon(
+                Icons.Filled.Edit,
+                contentDescription = stringResource(R.string.sleep_goal_edit),
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }
 
 @Composable
-private fun GoalInvitation() {
-    Text(stringResource(R.string.sleep_goal_cta_title), style = MaterialTheme.typography.titleMedium)
-    Text(stringResource(R.string.sleep_goal_cta_body), style = MaterialTheme.typography.bodyMedium)
-}
-
-@Composable
-private fun GoalSummary(goal: SleepGoalDto) {
-    Text(stringResource(R.string.sleep_goal_title), style = MaterialTheme.typography.titleMedium)
-    goal.bedtime?.let { GoalLine(stringResource(R.string.sleep_goal_bedtime), it.toJavaLocalTime().toLocalizedTime()) }
-    goal.wakeUpTime?.let {
-        GoalLine(stringResource(R.string.sleep_goal_wake_up), it.toJavaLocalTime().toLocalizedTime())
+private fun GoalValues(goal: SleepGoalDto) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        goal.bedtime?.let {
+            GoalValue(
+                icon = Icons.Filled.Bedtime,
+                label = stringResource(R.string.sleep_goal_bedtime),
+                value = it.toJavaLocalTime().toLocalizedTime(),
+            )
+        }
+        goal.wakeUpTime?.let {
+            GoalValue(
+                icon = Icons.Filled.WbSunny,
+                label = stringResource(R.string.sleep_goal_wake_up),
+                value = it.toJavaLocalTime().toLocalizedTime(),
+            )
+        }
+        goal.sleepMinutes?.let {
+            GoalValue(
+                icon = Icons.Filled.Schedule,
+                label = stringResource(R.string.sleep_goal_sleep),
+                value = it.minutes.asHoursAndMinutes(),
+            )
+        }
     }
-    goal.sleepMinutes?.let { GoalLine(stringResource(R.string.sleep_goal_sleep), it.minutes.asHoursAndMinutes()) }
 }
 
+/** One goal value: a small icon and label over the value, which gets the display typeface. */
 @Composable
-private fun GoalLine(
+private fun RowScope.GoalValue(
+    icon: ImageVector,
     label: String,
     value: String,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-        Text(value, style = MaterialTheme.typography.bodyLarge)
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Icon(
+                icon,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = LABEL_ALPHA),
+            )
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = LABEL_ALPHA),
+            )
+        }
+        Text(value, style = MaterialTheme.typography.headlineSmall)
     }
 }
 
@@ -117,6 +180,18 @@ private fun SleepGoalCardOnlyDurationPreview() {
     RemirPreview {
         SleepGoalCard(
             goal = SleepGoalDto(null, null, SAMPLE_SEVEN_AND_A_HALF_HOURS, sampleUpdatedAt),
+            onEdit = {},
+            modifier = Modifier.padding(16.dp),
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun SleepGoalCardBedtimeAndWakeUpPreview() {
+    RemirPreview {
+        SleepGoalCard(
+            goal = SleepGoalDto(LocalTime.parse("22:30"), LocalTime.parse("06:30"), null, sampleUpdatedAt),
             onEdit = {},
             modifier = Modifier.padding(16.dp),
         )
