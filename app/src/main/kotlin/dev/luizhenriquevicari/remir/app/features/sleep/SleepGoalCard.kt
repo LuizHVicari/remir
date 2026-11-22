@@ -1,14 +1,12 @@
 package dev.luizhenriquevicari.remir.app.features.sleep
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Edit
@@ -18,7 +16,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,9 +33,8 @@ import kotlinx.datetime.toJavaLocalTime
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
-/** Labels and the edit badge sit slightly back from the values, so the values read first. */
+/** Labels sit slightly back from the values, so the values read first. */
 private const val LABEL_ALPHA = 0.72f
-private const val BADGE_ALPHA = 0.12f
 
 /**
  * Call to action at the top of the Sleep tab. It uses the primary container colors, the same family as the
@@ -69,27 +65,10 @@ fun SleepGoalCard(
                         Text(stringResource(R.string.sleep_goal_cta_body), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
-                EditBadge()
+                // A standard icon, with no container: the whole card is the button, so this only signals the action.
+                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.sleep_goal_edit))
             }
             goal?.let { GoalValues(it) }
-        }
-    }
-}
-
-/** The edit affordance: a pencil in a soft circle, so it reads as a control and not as decoration. */
-@Composable
-private fun EditBadge() {
-    Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = BADGE_ALPHA),
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-    ) {
-        Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-            Icon(
-                Icons.Filled.Edit,
-                contentDescription = stringResource(R.string.sleep_goal_edit),
-                modifier = Modifier.size(20.dp),
-            )
         }
     }
 }
