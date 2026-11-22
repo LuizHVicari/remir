@@ -8,6 +8,7 @@ import dev.luizhenriquevicari.remir.server.common.NotFound
 import dev.luizhenriquevicari.remir.server.db.dbQuery
 import dev.luizhenriquevicari.remir.server.features.profile.ProfileRepository
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 /** Business rules + transaction boundary for sleep records. Requests arrive already validated by the route. */
 class SleepService(
@@ -15,7 +16,10 @@ class SleepService(
     private val profileRepository: ProfileRepository,
     private val clock: Clock = Clock.System,
 ) {
-    suspend fun list(userId: String): List<SleepRecordDto> = dbQuery { repository.list(userId) }
+    suspend fun list(
+        userId: String,
+        since: Instant? = null,
+    ): List<SleepRecordDto> = dbQuery { repository.list(userId, since) }
 
     suspend fun goal(userId: String): SleepGoalDto =
         dbQuery { repository.findGoal(userId) ?: throw NotFound("No sleep goal set") }

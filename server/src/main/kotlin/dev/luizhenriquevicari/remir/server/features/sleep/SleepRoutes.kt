@@ -18,8 +18,8 @@ import io.ktor.server.routing.Route
 
 /** Plain HTTP: receive, validate (with the `core` validator), call the service, respond. */
 fun Route.sleepRoutes(service: SleepService) {
-    get<SleepResource> {
-        call.respond(service.list(call.userId()))
+    get<SleepResource> { resource ->
+        call.respond(service.list(call.userId(), resource.since))
     }
 
     post<SleepResource> {

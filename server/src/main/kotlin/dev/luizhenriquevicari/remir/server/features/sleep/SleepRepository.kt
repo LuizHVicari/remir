@@ -7,6 +7,8 @@ import dev.luizhenriquevicari.remir.core.sleep.SleepRecordDto
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greaterEq
+import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.upsert
@@ -15,16 +17,20 @@ import kotlin.uuid.Uuid
 
 /** Exposed DSL only. Runs inside `dbQuery` (opened by the Service). Returns `core` DTOs. */
 class SleepRepository {
-    /** Newest first, capped so the response stays small until the app needs pagination. */
+    /**
+     * Newest first, always capped so a response stays small. Without [since] it is the latest [LIST_LIMIT] nights;
+     * with it, the nights that started at or after it, up to [SINCE_LIMIT] (a bit over a year of nights).
+     */
     fun list(
         userId: String,
-        limit: Int = LIST_LIMIT,
+        since: Instant? = null,
     ): List<SleepRecordDto> =
         SleepRecordsTable
             .selectAll()
             .where { SleepRecordsTable.userId eq userId }
+            .apply { since?.let { andWhere { SleepRecordsTable.bedtime greaterEq it } } }
             .orderBy(SleepRecordsTable.bedtime, SortOrder.DESC)
-            .limit(limit)
+            .limit(if (since == null) LIST_LIMIT else SINCE_LIMIT)
             .map { it.toDto() }
 
     fun insert(
@@ -95,5 +101,6 @@ class SleepRepository {
 
     private companion object {
         const val LIST_LIMIT = 100
+        const val SINCE_LIMIT = 400
     }
 }

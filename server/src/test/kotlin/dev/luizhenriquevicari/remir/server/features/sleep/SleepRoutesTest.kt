@@ -119,6 +119,37 @@ class SleepRoutesTest {
             assertEquals(listOf(nextNight.bedtime, night.bedtime), client.records(userId).map { it.bedtime })
         }
 
+    @Test
+    fun `GET sleep with since returns only the nights that started at or after it`() =
+        remirTestApplication { client ->
+            val userId = newUserId()
+            val day = kotlin.time.Duration.parse("1d")
+            val nights = (0 until 3).map { night.shifted(day * it) }
+            nights.forEach { client.log(userId, it) }
+
+            val since = nights[1].bedtime
+            val response =
+                client.get("/sleep?since=$since") { bearerAuth(TestJwt.token(userId)) }.body<List<SleepRecordDto>>()
+
+            assertEquals(listOf(nights[2].bedtime, nights[1].bedtime), response.map { it.bedtime })
+        }
+
+    @Test
+    fun `GET sleep with a malformed since answers 400`() =
+        remirTestApplication { client ->
+            val response = client.get("/sleep?since=yesterday") { bearerAuth(TestJwt.token(newUserId())) }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+        }
+
+    private fun CreateSleepRecordRequest.shifted(by: kotlin.time.Duration) =
+        copy(
+            bedtime = bedtime + by,
+            fellAsleepAt = fellAsleepAt?.plus(by),
+            wokeUpAt = wokeUpAt + by,
+            gotUpAt = gotUpAt + by,
+        )
+
     private suspend fun HttpClient.saveGoal(
         userId: String,
         request: SaveSleepGoalRequest,
