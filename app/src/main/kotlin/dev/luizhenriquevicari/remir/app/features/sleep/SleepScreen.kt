@@ -1,19 +1,14 @@
 package dev.luizhenriquevicari.remir.app.features.sleep
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,20 +20,15 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.luizhenriquevicari.remir.app.R
 import dev.luizhenriquevicari.remir.app.common.asString
-import dev.luizhenriquevicari.remir.app.common.toLocalizedDate
-import dev.luizhenriquevicari.remir.app.common.toLocalizedTime
 import dev.luizhenriquevicari.remir.app.designsystem.RemirPreview
 import dev.luizhenriquevicari.remir.app.designsystem.components.ErrorState
 import dev.luizhenriquevicari.remir.app.designsystem.components.Loading
 import dev.luizhenriquevicari.remir.app.navigation.TabScaffold
 import dev.luizhenriquevicari.remir.core.sleep.SleepGoalDto
-import dev.luizhenriquevicari.remir.core.sleep.SleepRecordDto
 import kotlinx.datetime.LocalTime
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
-import kotlin.uuid.Uuid
 
 /** Wires the ViewModel to the screen. The only part that knows about Koin/StateFlow. */
 @Composable
@@ -46,6 +36,7 @@ fun SleepRoute(
     onOpenProfile: () -> Unit,
     onLogSleep: () -> Unit,
     onEditGoal: () -> Unit,
+    onSeeAll: () -> Unit,
     viewModel: SleepViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -59,6 +50,7 @@ fun SleepRoute(
         onOpenProfile = onOpenProfile,
         onLogSleep = onLogSleep,
         onEditGoal = onEditGoal,
+        onSeeAll = onSeeAll,
         onPeriodChange = viewModel::onPeriodChange,
         onRetry = viewModel::retry,
     )
@@ -71,6 +63,7 @@ fun SleepScreen(
     onOpenProfile: () -> Unit,
     onLogSleep: () -> Unit,
     onEditGoal: () -> Unit,
+    onSeeAll: () -> Unit,
     onPeriodChange: (SummaryPeriod) -> Unit,
     onRetry: () -> Unit,
 ) {
@@ -89,7 +82,7 @@ fun SleepScreen(
         when {
             state.loading -> Loading(modifier)
             state.error != null && state.records.isEmpty() -> ErrorState(state.error.asString(), modifier, onRetry)
-            else -> SleepList(state, onEditGoal, onPeriodChange, modifier)
+            else -> SleepList(state, onEditGoal, onSeeAll, onPeriodChange, modifier)
         }
     }
 }
@@ -98,6 +91,7 @@ fun SleepScreen(
 private fun SleepList(
     state: SleepState,
     onEditGoal: () -> Unit,
+    onSeeAll: () -> Unit,
     onPeriodChange: (SummaryPeriod) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -116,31 +110,7 @@ private fun SleepList(
                 onPeriodChange = onPeriodChange,
             )
         }
-        if (state.records.isEmpty()) {
-            item { Text(stringResource(R.string.sleep_empty), style = MaterialTheme.typography.bodyLarge) }
-        }
-        items(state.records, key = { it.id }) { SleepRecordCard(it) }
-    }
-}
-
-@Composable
-private fun SleepRecordCard(record: SleepRecordDto) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(record.wokeUpAt.toLocalizedDate(), style = MaterialTheme.typography.titleMedium)
-            Text(
-                stringResource(
-                    R.string.sleep_in_bed,
-                    record.bedtime.toLocalizedTime(),
-                    record.gotUpAt.toLocalizedTime(),
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                stringResource(R.string.sleep_slept, record.timeAsleep.asHoursAndMinutes()),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        }
+        item { RecentNightsCard(records = state.records, onSeeAll = onSeeAll) }
     }
 }
 
@@ -150,26 +120,6 @@ fun Duration.asHoursAndMinutes(): String =
 
 private const val MINUTES_PER_HOUR = 60
 
-private fun sampleRecord(
-    bedtime: String,
-    fellAsleepAt: String?,
-    wokeUpAt: String,
-    gotUpAt: String,
-) = SleepRecordDto(
-    id = Uuid.random(),
-    bedtime = Instant.parse(bedtime),
-    fellAsleepAt = fellAsleepAt?.let(Instant::parse),
-    wokeUpAt = Instant.parse(wokeUpAt),
-    gotUpAt = Instant.parse(gotUpAt),
-    createdAt = Instant.parse(gotUpAt) + 1.minutes,
-)
-
-private val sampleRecords =
-    listOf(
-        sampleRecord("2026-03-10T23:00:00Z", "2026-03-10T23:30:00Z", "2026-03-11T07:00:00Z", "2026-03-11T07:15:00Z"),
-        sampleRecord("2026-03-09T22:45:00Z", null, "2026-03-10T06:30:00Z", "2026-03-10T06:45:00Z"),
-    )
-
 private val sampleGoal =
     SleepGoalDto(LocalTime.parse("23:00"), LocalTime.parse("07:00"), 480, Instant.parse("2026-03-10T12:00:00Z"))
 
@@ -178,25 +128,11 @@ private val sampleGoal =
 private fun SleepScreenPreview() {
     RemirPreview {
         SleepScreen(
-            SleepState(loading = false, records = sampleRecords, goal = sampleGoal),
+            SleepState(loading = false, records = sampleNights, goal = sampleGoal),
             onOpenProfile = {},
             onLogSleep = {},
             onEditGoal = {},
-            onPeriodChange = {},
-            onRetry = {},
-        )
-    }
-}
-
-@PreviewLightDark
-@Composable
-private fun SleepScreenNoGoalPreview() {
-    RemirPreview {
-        SleepScreen(
-            SleepState(loading = false, records = sampleRecords),
-            onOpenProfile = {},
-            onLogSleep = {},
-            onEditGoal = {},
+            onSeeAll = {},
             onPeriodChange = {},
             onRetry = {},
         )
@@ -212,6 +148,7 @@ private fun SleepScreenEmptyPreview() {
             onOpenProfile = {},
             onLogSleep = {},
             onEditGoal = {},
+            onSeeAll = {},
             onPeriodChange = {},
             onRetry = {},
         )
@@ -227,6 +164,7 @@ private fun SleepScreenLoadingPreview() {
             onOpenProfile = {},
             onLogSleep = {},
             onEditGoal = {},
+            onSeeAll = {},
             onPeriodChange = {},
             onRetry = {},
         )

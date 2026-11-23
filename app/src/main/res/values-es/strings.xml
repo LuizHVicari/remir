@@ -42,7 +42,9 @@
     <string name="sleep_got_up">Se levantó</string>
     <string name="sleep_save">Guardar</string>
     <string name="sleep_in_bed">%1$s – %2$s</string>
-    <string name="sleep_slept">Durmió %1$s</string>
+    <string name="sleep_recent_title">Últimas noches</string>
+    <string name="sleep_see_all">Ver todo</string>
+    <string name="sleep_history_title">Todas las noches</string>
     <string name="sleep_duration">%1$dh %2$02dmin</string>
 
     <string name="sleep_summary_title">Resumen</string>

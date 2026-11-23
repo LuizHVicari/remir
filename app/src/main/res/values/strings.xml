@@ -44,7 +44,9 @@
     <string name="sleep_got_up">Got out of bed</string>
     <string name="sleep_save">Save</string>
     <string name="sleep_in_bed">%1$s – %2$s</string>
-    <string name="sleep_slept">Slept %1$s</string>
+    <string name="sleep_recent_title">Recent nights</string>
+    <string name="sleep_see_all">See all</string>
+    <string name="sleep_history_title">All nights</string>
     <string name="sleep_duration">%1$dh %2$02dmin</string>
 
     <string name="sleep_summary_title">Summary</string>

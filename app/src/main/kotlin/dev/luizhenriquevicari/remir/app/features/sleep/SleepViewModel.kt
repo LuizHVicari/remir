@@ -17,8 +17,12 @@ import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 
+/** How many of the latest nights the Sleep tab shows; the rest are one tap away in the history. */
+private const val RECENT_NIGHTS = 3
+
 data class SleepState(
     val loading: Boolean = true,
+    /** The latest [RECENT_NIGHTS] nights. */
     val records: List<SleepRecordDto> = emptyList(),
     /** Null while the user has not set one. */
     val goal: SleepGoalDto? = null,
@@ -57,7 +61,7 @@ class SleepViewModel(
     }
 
     private suspend fun loadRecords() {
-        apiCall { api.list() }
+        apiCall { api.list(limit = RECENT_NIGHTS) }
             .onSuccess { records -> _state.update { it.copy(loading = false, records = records, error = null) } }
             .onFailure { e -> _state.update { it.copy(loading = false, error = e.userMessage) } }
     }

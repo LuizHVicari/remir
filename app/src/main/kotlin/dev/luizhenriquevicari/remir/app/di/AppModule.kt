@@ -10,6 +10,7 @@ import dev.luizhenriquevicari.remir.app.features.profile.ProfileViewModel
 import dev.luizhenriquevicari.remir.app.features.sleep.EditSleepGoalViewModel
 import dev.luizhenriquevicari.remir.app.features.sleep.LogSleepViewModel
 import dev.luizhenriquevicari.remir.app.features.sleep.SleepApi
+import dev.luizhenriquevicari.remir.app.features.sleep.SleepHistoryViewModel
 import dev.luizhenriquevicari.remir.app.features.sleep.SleepViewModel
 import dev.luizhenriquevicari.remir.app.network.createHttpClient
 import org.koin.core.module.dsl.singleOf
@@ -28,6 +29,7 @@ val appModule =
         // sleep
         singleOf(::SleepApi)
         viewModelOf(::SleepViewModel)
+        viewModelOf(::SleepHistoryViewModel)
         viewModelOf(::LogSleepViewModel)
         viewModelOf(::EditSleepGoalViewModel)
 

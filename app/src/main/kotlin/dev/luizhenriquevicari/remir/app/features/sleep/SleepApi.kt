@@ -20,8 +20,15 @@ import kotlin.time.Instant
 class SleepApi(
     private val client: HttpClient,
 ) {
-    /** The latest nights, or every night that started at or after [since]. */
-    suspend fun list(since: Instant? = null): List<SleepRecordDto> = client.get(SleepResource(since)).body()
+    /**
+     * Nights, newest first: one page of [limit] nights after skipping [offset], optionally only those that started
+     * at or after [since]. Without a [limit] the server picks one (the latest 100, or everything since [since]).
+     */
+    suspend fun list(
+        since: Instant? = null,
+        limit: Int? = null,
+        offset: Int = 0,
+    ): List<SleepRecordDto> = client.get(SleepResource(since, limit, offset)).body()
 
     /** Fails with a 404 `ApiException` while the user has no goal. */
     suspend fun goal(): SleepGoalDto = client.get(SleepGoalResource()).body()
