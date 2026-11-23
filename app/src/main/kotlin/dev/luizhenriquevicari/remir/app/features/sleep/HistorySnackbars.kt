@@ -10,7 +10,6 @@ import dev.luizhenriquevicari.remir.app.R
 import dev.luizhenriquevicari.remir.app.common.UiText
 import dev.luizhenriquevicari.remir.app.common.asString
 
-/** Says a night was deleted for a few seconds, with "Undo". Reports which way it ended. */
 @Composable
 internal fun DeletedNightSnackbar(
     host: SnackbarHostState,
@@ -22,7 +21,7 @@ internal fun DeletedNightSnackbar(
     val undo = stringResource(R.string.sleep_undo)
     LaunchedEffect(showing) {
         if (!showing) return@LaunchedEffect
-        // A snackbar with an action never goes away on its own by default, so ask for a duration.
+        // Without an explicit duration, a snackbar with an action never goes away on its own.
         when (host.showSnackbar(message, actionLabel = undo, duration = SnackbarDuration.Long)) {
             SnackbarResult.ActionPerformed -> onUndo()
             SnackbarResult.Dismissed -> onDismissed()
@@ -30,7 +29,6 @@ internal fun DeletedNightSnackbar(
     }
 }
 
-/** Shows a failure of a delete or an undo once. */
 @Composable
 internal fun ActionErrorSnackbar(
     host: SnackbarHostState,

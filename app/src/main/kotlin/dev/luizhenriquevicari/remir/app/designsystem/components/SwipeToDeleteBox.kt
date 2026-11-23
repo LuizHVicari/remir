@@ -25,11 +25,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import dev.luizhenriquevicari.remir.app.designsystem.RemirPreview
 
-/**
- * Swipe the [content] to either side to delete it, as in an email list. A red strip with a bin shows behind it
- * while it moves. [onDelete] runs once the swipe is complete; the caller is expected to take the item out of its
- * list, which is what makes it disappear. [deleteDescription] is what screen readers say for the bin.
- */
+/** Swipe [content] to either side to delete it, as in an email list. The caller removes the item in [onDelete]. */
 @Composable
 fun SwipeToDeleteBox(
     onDelete: () -> Unit,
@@ -39,7 +35,6 @@ fun SwipeToDeleteBox(
 ) {
     val currentOnDelete by rememberUpdatedState(onDelete)
     val state = rememberSwipeToDismissBoxState()
-    // The swipe has settled on one side: the item is gone as far as the user is concerned.
     LaunchedEffect(state.currentValue) {
         if (state.currentValue != SwipeToDismissBoxValue.Settled) currentOnDelete()
     }
@@ -48,7 +43,6 @@ fun SwipeToDeleteBox(
         modifier = modifier,
         backgroundContent = { DeleteStrip(state.dismissDirection, deleteDescription) },
     ) {
-        // Opaque, so the strip behind never shows through the content.
         Surface(color = MaterialTheme.colorScheme.surface, content = content)
     }
 }
@@ -58,7 +52,6 @@ private fun DeleteStrip(
     direction: SwipeToDismissBoxValue,
     description: String,
 ) {
-    // Nothing while at rest, so no red edge peeks out from behind the content.
     val color = if (direction == SwipeToDismissBoxValue.Settled) Color.Transparent else MaterialTheme.colorScheme.error
     val alignment =
         when (direction) {

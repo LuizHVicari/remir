@@ -50,7 +50,6 @@ fun SleepHistoryRoute(
     viewModel: SleepHistoryViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    // Also runs when coming back from editing a night, so the list shows it changed.
     LifecycleResumeEffect(viewModel) {
         viewModel.refresh()
         onPauseOrDispose {}
@@ -67,7 +66,7 @@ fun SleepHistoryRoute(
     )
 }
 
-/** Stateless: state + lambdas only. The snackbar host is the only local UI state. */
+/** Stateless: state + lambdas only. */
 @Composable
 fun SleepHistoryScreen(
     state: SleepHistoryState,
@@ -121,7 +120,6 @@ private fun NightsList(
         }
     }
     LaunchedEffect(nearEnd, state.items.size) { if (nearEnd) onLoadMore() }
-    // Nights are already newest first, so each month's nights are next to each other.
     val months = remember(state.items) { state.items.groupBy { it.wokeUpAt.toLocalizedMonth() } }
     val deleteDescription = stringResource(R.string.sleep_delete)
 
@@ -142,7 +140,6 @@ private fun NightsList(
     }
 }
 
-/** The row and the line under it, so both move together when swiped. */
 @Composable
 private fun NightEntry(
     night: SleepRecordDto,

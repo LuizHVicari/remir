@@ -50,10 +50,8 @@ class SleepApi(
                 setBody(request)
             }.body()
 
-    /** Fails with a 404 `ApiException` when the night does not exist (any more). */
     suspend fun get(id: Uuid): SleepRecordDto = client.get(SleepRecordResource(id)).body()
 
-    /** Replaces the night as a whole. */
     suspend fun update(
         id: Uuid,
         request: CreateSleepRecordRequest,

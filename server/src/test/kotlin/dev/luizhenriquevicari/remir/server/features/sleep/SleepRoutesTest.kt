@@ -3,6 +3,7 @@ package dev.luizhenriquevicari.remir.server.features.sleep
 import dev.luizhenriquevicari.remir.core.api.ApiError
 import dev.luizhenriquevicari.remir.core.sleep.CreateSleepRecordRequest
 import dev.luizhenriquevicari.remir.core.sleep.SaveSleepGoalRequest
+import dev.luizhenriquevicari.remir.core.sleep.SleepFeeling
 import dev.luizhenriquevicari.remir.core.sleep.SleepGoalDto
 import dev.luizhenriquevicari.remir.core.sleep.SleepRecordDto
 import dev.luizhenriquevicari.remir.server.support.TestJwt
@@ -91,6 +92,48 @@ class SleepRoutesTest {
 
             assertEquals(HttpStatusCode.Created, response.status)
             assertNull(response.body<SleepRecordDto>().fellAsleepAt)
+        }
+
+    @Test
+    fun `POST sleep stores how the user felt and a night without it has none`() =
+        remirTestApplication { client ->
+            val userId = newUserId()
+
+            val felt = client.logAndRead(userId, night.copy(feeling = SleepFeeling.RESTED))
+            val unsaid = client.logAndRead(userId, night.shifted(kotlin.time.Duration.parse("1d")))
+
+            assertEquals(SleepFeeling.RESTED, felt.feeling)
+            assertNull(unsaid.feeling)
+            assertEquals(felt, client.get("/sleep/${felt.id}") { bearerAuth(TestJwt.token(userId)) }.body())
+        }
+
+    @Test
+    fun `PUT sleep by id changes and clears the feeling`() =
+        remirTestApplication { client ->
+            val userId = newUserId()
+            val created = client.logAndRead(userId, night.copy(feeling = SleepFeeling.TIRED))
+
+            val changed = client.replace(userId, created.id, night.copy(feeling = SleepFeeling.ENERGIZED))
+            assertEquals(SleepFeeling.ENERGIZED, changed.body<SleepRecordDto>().feeling)
+
+            val cleared = client.replace(userId, created.id, night)
+            assertNull(cleared.body<SleepRecordDto>().feeling)
+        }
+
+    @Test
+    fun `POST sleep with an unknown feeling answers 400`() =
+        remirTestApplication { client ->
+            val response =
+                client.post("/sleep") {
+                    bearerAuth(TestJwt.token(newUserId()))
+                    contentType(ContentType.Application.Json)
+                    setBody(
+                        """{"bedtime":"2026-03-10T23:00:00Z","wokeUpAt":"2026-03-11T07:00:00Z",""" +
+                            """"gotUpAt":"2026-03-11T07:15:00Z","feeling":"SLEEPY"}""",
+                    )
+                }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
         }
 
     @Test

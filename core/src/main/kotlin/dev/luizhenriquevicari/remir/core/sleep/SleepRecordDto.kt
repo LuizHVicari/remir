@@ -19,5 +19,7 @@ data class SleepRecordDto(
     val wokeUpAt: Instant,
     /** When the user got out of bed. */
     val gotUpAt: Instant,
+    /** How the user felt on waking up, if they said. Defaults to null so a server that predates it still decodes. */
+    val feeling: SleepFeeling? = null,
     val createdAt: Instant,
 )

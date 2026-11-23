@@ -52,6 +52,7 @@ class SleepRepository {
             it[fellAsleepAt] = request.fellAsleepAt
             it[wokeUpAt] = request.wokeUpAt
             it[gotUpAt] = request.gotUpAt
+            it[feeling] = request.feeling
             it[createdAt] = now
         }
         // Read the row back instead of building the DTO from `now`: Postgres keeps microseconds, the clock has
@@ -73,7 +74,6 @@ class SleepRepository {
             .singleOrNull()
             ?.toDto()
 
-    /** Replaces the four moments of the night; null when the user has no such night. `createdAt` is kept. */
     fun update(
         userId: String,
         id: Uuid,
@@ -85,11 +85,11 @@ class SleepRepository {
                 it[fellAsleepAt] = request.fellAsleepAt
                 it[wokeUpAt] = request.wokeUpAt
                 it[gotUpAt] = request.gotUpAt
+                it[feeling] = request.feeling
             }
         return if (updated == 0) null else find(userId, id)
     }
 
-    /** True when a night was removed, false when the user has no such night. */
     fun delete(
         userId: String,
         id: Uuid,
@@ -139,6 +139,7 @@ class SleepRepository {
             fellAsleepAt = this[SleepRecordsTable.fellAsleepAt],
             wokeUpAt = this[SleepRecordsTable.wokeUpAt],
             gotUpAt = this[SleepRecordsTable.gotUpAt],
+            feeling = this[SleepRecordsTable.feeling],
             createdAt = this[SleepRecordsTable.createdAt],
         )
 }

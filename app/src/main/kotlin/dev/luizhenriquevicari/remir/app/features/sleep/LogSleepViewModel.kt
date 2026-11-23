@@ -6,6 +6,7 @@ import dev.luizhenriquevicari.remir.app.common.UiText
 import dev.luizhenriquevicari.remir.app.network.apiCall
 import dev.luizhenriquevicari.remir.app.network.fieldErrors
 import dev.luizhenriquevicari.remir.app.network.userMessage
+import dev.luizhenriquevicari.remir.core.sleep.SleepFeeling
 import dev.luizhenriquevicari.remir.core.sleep.SleepValidation
 import dev.luizhenriquevicari.remir.core.validation.byField
 import io.konform.validation.Invalid
@@ -26,21 +27,20 @@ data class LogSleepState(
     val fellAsleepTime: LocalTime? = null,
     val wokeUpTime: LocalTime = LocalTime.parse("07:00"),
     val gotUpTime: LocalTime = LocalTime.parse("07:15"),
+    /** Null while unanswered: the user may leave it out. */
+    val feeling: SleepFeeling? = null,
     /** Errors per JSON field name, from local Konform validation and from the server (`ApiError.fields`). */
     val fieldErrors: Map<String, String> = emptyMap(),
     /** General error (network, 500...). */
     val error: UiText? = null,
     val saving: Boolean = false,
     val saved: Boolean = false,
-    /** True while an existing night is being edited rather than a new one logged. */
     val editing: Boolean = false,
-    /** True while the night being edited is fetched, so the form does not show defaults for a moment. */
     val loading: Boolean = false,
-    /** Why the night being edited could not be fetched; the screen offers to try again. */
     val loadError: UiText? = null,
 )
 
-/** Logs a new night, or edits the one with [editingId]: same form, same validation. */
+/** Logs a new night, or edits the one with [editingId]. */
 class LogSleepViewModel(
     private val api: SleepApi,
     private val editingId: Uuid? = null,
@@ -52,7 +52,6 @@ class LogSleepViewModel(
         load()
     }
 
-    /** Fills the form with the night being edited. Nothing to do when logging a new one. */
     fun load() {
         val id = editingId ?: return
         _state.update { it.copy(loading = true, loadError = null) }
@@ -73,6 +72,8 @@ class LogSleepViewModel(
 
     fun onGotUpTimeChange(time: LocalTime) = edit { it.copy(gotUpTime = time) }
 
+    fun onFeelingChange(feeling: SleepFeeling?) = edit { it.copy(feeling = feeling) }
+
     fun save() {
         val current = _state.value
         val request =
@@ -82,6 +83,7 @@ class LogSleepViewModel(
                 fellAsleepTime = current.fellAsleepTime,
                 wokeUpTime = current.wokeUpTime,
                 gotUpTime = current.gotUpTime,
+                feeling = current.feeling,
             )
         // Same validator as the server, before calling the API.
         val validation = SleepValidation.create(request)

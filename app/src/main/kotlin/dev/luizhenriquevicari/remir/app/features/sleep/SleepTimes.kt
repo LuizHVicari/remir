@@ -1,6 +1,7 @@
 package dev.luizhenriquevicari.remir.app.features.sleep
 
 import dev.luizhenriquevicari.remir.core.sleep.CreateSleepRecordRequest
+import dev.luizhenriquevicari.remir.core.sleep.SleepFeeling
 import dev.luizhenriquevicari.remir.core.sleep.SleepRecordDto
 import java.time.LocalDate
 import java.time.LocalTime
@@ -22,6 +23,7 @@ fun buildSleepRequest(
     fellAsleepTime: LocalTime?,
     wokeUpTime: LocalTime,
     gotUpTime: LocalTime,
+    feeling: SleepFeeling? = null,
     zone: ZoneId = ZoneId.systemDefault(),
 ): CreateSleepRecordRequest {
     val bedtime = bedDate.atTime(bedTime).atZone(zone)
@@ -33,14 +35,19 @@ fun buildSleepRequest(
         fellAsleepAt = fellAsleep?.toInstant()?.toKotlinInstant(),
         wokeUpAt = wokeUp.toInstant().toKotlinInstant(),
         gotUpAt = gotUp.toInstant().toKotlinInstant(),
+        feeling = feeling,
     )
 }
 
-/** The record as the request that would log it again (what undoing a delete sends). */
 fun SleepRecordDto.toRequest() =
-    CreateSleepRecordRequest(bedtime = bedtime, fellAsleepAt = fellAsleepAt, wokeUpAt = wokeUpAt, gotUpAt = gotUpAt)
+    CreateSleepRecordRequest(
+        bedtime = bedtime,
+        fellAsleepAt = fellAsleepAt,
+        wokeUpAt = wokeUpAt,
+        gotUpAt = gotUpAt,
+        feeling = feeling,
+    )
 
-/** The inverse of [buildSleepRequest]: the form fields that would build this record, in the device's zone. */
 fun SleepRecordDto.toFormState(zone: ZoneId = ZoneId.systemDefault()): LogSleepState {
     fun Instant.local() = toJavaInstant().atZone(zone)
     return LogSleepState(
@@ -49,6 +56,7 @@ fun SleepRecordDto.toFormState(zone: ZoneId = ZoneId.systemDefault()): LogSleepS
         fellAsleepTime = fellAsleepAt?.local()?.toLocalTime(),
         wokeUpTime = wokeUpAt.local().toLocalTime(),
         gotUpTime = gotUpAt.local().toLocalTime(),
+        feeling = feeling,
     )
 }
 

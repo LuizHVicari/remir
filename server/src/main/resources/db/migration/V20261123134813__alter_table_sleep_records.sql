@@ -1,0 +1,1 @@
+ALTER TABLE sleep_records ADD feeling VARCHAR(16) NULL;

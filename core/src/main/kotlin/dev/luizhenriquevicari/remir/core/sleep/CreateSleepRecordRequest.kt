@@ -9,4 +9,6 @@ data class CreateSleepRecordRequest(
     val fellAsleepAt: Instant? = null,
     val wokeUpAt: Instant,
     val gotUpAt: Instant,
+    /** How the user felt on waking up. Optional: a night may be logged without it. */
+    val feeling: SleepFeeling? = null,
 )

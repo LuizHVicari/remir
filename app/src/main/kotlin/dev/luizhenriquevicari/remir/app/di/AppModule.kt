@@ -31,7 +31,6 @@ val appModule =
         singleOf(::SleepApi)
         viewModelOf(::SleepViewModel)
         viewModelOf(::SleepHistoryViewModel)
-        // Logs a new night, or edits the one whose id is passed as the parameter.
         viewModel { params -> LogSleepViewModel(get(), params.getOrNull()) }
         viewModelOf(::EditSleepGoalViewModel)
 

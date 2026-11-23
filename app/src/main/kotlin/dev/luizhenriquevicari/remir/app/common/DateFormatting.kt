@@ -24,7 +24,6 @@ fun Instant.toLocalizedTime(
     locale: Locale = Locale.getDefault(),
 ): String = toJavaInstant().atZone(zone).toLocalTime().toLocalizedTime(locale)
 
-/** The month of this instant in the device's time zone (e.g. "November 2026"), for headers that group a list. */
 fun Instant.toLocalizedMonth(
     zone: ZoneId = ZoneId.systemDefault(),
     locale: Locale = Locale.getDefault(),
@@ -34,7 +33,6 @@ fun Instant.toLocalizedMonth(
         .format(toJavaInstant().atZone(zone))
         .replaceFirstChar { it.titlecase(locale) }
 
-/** The short weekday of this instant in the device's time zone (e.g. "Mon"). */
 fun Instant.toLocalizedWeekday(
     zone: ZoneId = ZoneId.systemDefault(),
     locale: Locale = Locale.getDefault(),
@@ -44,7 +42,6 @@ fun Instant.toLocalizedWeekday(
         .format(toJavaInstant().atZone(zone))
         .replaceFirstChar { it.titlecase(locale) }
 
-/** The day of the month of this instant in the device's time zone. */
 fun Instant.toDayOfMonth(zone: ZoneId = ZoneId.systemDefault()): Int = toJavaInstant().atZone(zone).dayOfMonth
 
 fun LocalDate.toLocalizedDate(locale: Locale = Locale.getDefault()): String =

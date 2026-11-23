@@ -33,16 +33,14 @@ import dev.luizhenriquevicari.remir.app.designsystem.components.PrimaryButton
 import dev.luizhenriquevicari.remir.app.designsystem.components.RemirDatePickerDialog
 import dev.luizhenriquevicari.remir.app.designsystem.components.RemirTimePickerDialog
 import dev.luizhenriquevicari.remir.app.designsystem.components.RemirTopBar
+import dev.luizhenriquevicari.remir.core.sleep.SleepFeeling
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlin.uuid.Uuid
 
-/**
- * Wires the ViewModel to the screen. Logs a new night, or edits the one with [editingId]. Leaves the screen once
- * the night is saved.
- */
+/** Wires the ViewModel to the screen. Leaves the screen once the night is saved. */
 @Composable
 fun LogSleepRoute(
     onBack: () -> Unit,
@@ -59,6 +57,7 @@ fun LogSleepRoute(
         onFellAsleepTimeChange = viewModel::onFellAsleepTimeChange,
         onWokeUpTimeChange = viewModel::onWokeUpTimeChange,
         onGotUpTimeChange = viewModel::onGotUpTimeChange,
+        onFeelingChange = viewModel::onFeelingChange,
         onSave = viewModel::save,
         onRetryLoad = viewModel::load,
     )
@@ -77,6 +76,7 @@ fun LogSleepScreen(
     onFellAsleepTimeChange: (LocalTime?) -> Unit,
     onWokeUpTimeChange: (LocalTime) -> Unit,
     onGotUpTimeChange: (LocalTime) -> Unit,
+    onFeelingChange: (SleepFeeling?) -> Unit,
     onSave: () -> Unit,
     onRetryLoad: () -> Unit,
 ) {
@@ -91,6 +91,7 @@ fun LogSleepScreen(
                     state = state,
                     onOpenPicker = { picker = it },
                     onClearFellAsleep = { onFellAsleepTimeChange(null) },
+                    onFeelingChange = onFeelingChange,
                     onSave = onSave,
                     modifier = Modifier.padding(padding),
                 )
@@ -108,12 +109,12 @@ fun LogSleepScreen(
     )
 }
 
-/** The fields. Tapping one asks the screen to open its picker. */
 @Composable
 private fun SleepForm(
     state: LogSleepState,
     onOpenPicker: (Picker) -> Unit,
     onClearFellAsleep: () -> Unit,
+    onFeelingChange: (SleepFeeling?) -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -153,6 +154,11 @@ private fun SleepForm(
             label = stringResource(R.string.sleep_got_up),
             onClick = { onOpenPicker(Picker.GotUp) },
             error = state.fieldErrors["gotUpAt"],
+        )
+        SleepFeelingPicker(
+            selected = state.feeling,
+            onSelect = onFeelingChange,
+            modifier = Modifier.padding(vertical = 8.dp),
         )
         state.error?.let { Text(it.asString(), color = MaterialTheme.colorScheme.error) }
         PrimaryButton(stringResource(R.string.sleep_save), onClick = onSave, loading = state.saving)
@@ -237,6 +243,7 @@ private fun PreviewLogSleepScreen(state: LogSleepState) {
             onFellAsleepTimeChange = {},
             onWokeUpTimeChange = {},
             onGotUpTimeChange = {},
+            onFeelingChange = {},
             onSave = {},
             onRetryLoad = {},
         )
@@ -246,7 +253,13 @@ private fun PreviewLogSleepScreen(state: LogSleepState) {
 @PreviewLightDark
 @Composable
 private fun LogSleepScreenPreview() {
-    PreviewLogSleepScreen(LogSleepState(bedDate = sampleDate, fellAsleepTime = LocalTime.parse("23:30")))
+    PreviewLogSleepScreen(
+        LogSleepState(
+            bedDate = sampleDate,
+            fellAsleepTime = LocalTime.parse("23:30"),
+            feeling = SleepFeeling.RESTED,
+        ),
+    )
 }
 
 @PreviewLightDark

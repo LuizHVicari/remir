@@ -114,7 +114,7 @@ private fun sampleNight(
     wokeUpAt: String,
 ): SleepRecordDto {
     val woke = Instant.parse(wokeUpAt)
-    return SleepRecordDto(Uuid.random(), Instant.parse(bedtime), null, woke, woke, woke)
+    return SleepRecordDto(Uuid.random(), Instant.parse(bedtime), null, woke, woke, null, woke)
 }
 
 /** About 11 pm to 7 am UTC, shifted a little each night. */
