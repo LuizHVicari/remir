@@ -51,14 +51,13 @@ class SleepRepository {
             it[gotUpAt] = request.gotUpAt
             it[createdAt] = now
         }
-        return SleepRecordDto(
-            id = newId,
-            bedtime = request.bedtime,
-            fellAsleepAt = request.fellAsleepAt,
-            wokeUpAt = request.wokeUpAt,
-            gotUpAt = request.gotUpAt,
-            createdAt = now,
-        )
+        // Read the row back instead of building the DTO from `now`: Postgres keeps microseconds, the clock has
+        // nanoseconds, and the response must equal what a later GET returns.
+        return SleepRecordsTable
+            .selectAll()
+            .where { SleepRecordsTable.id eq newId }
+            .single()
+            .toDto()
     }
 
     fun findGoal(userId: String): SleepGoalDto? =
@@ -81,7 +80,12 @@ class SleepRepository {
             it[sleepMinutes] = request.sleepMinutes
             it[updatedAt] = now
         }
-        return SleepGoalDto(request.bedtime, request.wakeUpTime, request.sleepMinutes, now)
+        // Same reason as in `insert`: return what the database stored, not the in-memory clock value.
+        return SleepGoalsTable
+            .selectAll()
+            .where { SleepGoalsTable.userId eq userId }
+            .single()
+            .toGoalDto()
     }
 
     private fun ResultRow.toGoalDto() =
