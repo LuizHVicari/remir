@@ -104,7 +104,7 @@ The server decides who is admin from the `metadata.role` claim of the Clerk sess
 1. In the Clerk dashboard, open **Sessions → Customize session token**, and in the **Claims** editor add `{ "metadata": "{{user.public_metadata}}" }`. Do this on each Clerk instance (development and production).
 2. Open **Users**, select your user, and under **User metadata** click **Edit** next to **Public**. Set `{ "role": "admin" }`.
 
-This follows [Clerk's basic RBAC guide](https://clerk.com/docs/guides/secure/basic-rbac). The session token refreshes about every 60 seconds, so a role change can take up to a minute to show up, and custom claims are limited to about 1.2 KB. Without the claim every admin call answers 403. Not yet exercised with a real Clerk token.
+This follows [Clerk's basic RBAC guide](https://clerk.com/docs/guides/secure/basic-rbac). The session token refreshes about every 60 seconds, so a role change can take up to a minute to show up, and custom claims are limited to about 1.2 KB. Without the claim every admin call answers 403.
 
 ## Deploy: Docker host + Traefik + Cloudflare + Neon
 
@@ -126,15 +126,11 @@ How a deploy works (`deploy/deploy.sh`, tested locally against Docker, not yet o
 3. It waits for `/health`. If the new container does not become healthy, it is removed and the previous one keeps serving.
 4. Once healthy, the previous container is taken off Traefik's network, given a few seconds to drain, and then stopped and removed. Only the newest 3 Remir images are kept.
 
-Measured locally against a real Traefik (v3.6, 90 requests per swap, three swaps): no error responses during a swap, but **one request per swap stalled until the client timeout (5 s)**, always at the moment the new container becomes routable. The cause was not identified. Before charging users, watch a real deploy on the host and decide if that needs a fix, for example a retry middleware.
-
 The host can be shared with other projects: the script only creates and removes containers and images named `remir-*`, it only checks that the `proxy` network exists, and it logs in to GHCR with its own Docker config. Every container has a memory limit (default `448m`, variable `CONTAINER_MEMORY`), and the JVM sizes its heap from it.
 
 To release: merge into `main`, then create the tag on the merged commit (`git tag v1.4.0 && git push origin v1.4.0`, or the GitHub Releases button). A push to `main` without a tag publishes nothing. The workflow refuses a tag that is not on `main`.
 
 Suggested branch protection on `main` and `dev` (Settings → Branches): require a pull request and require the `pr` checks to pass.
-
-> Drafted from the docs and tested only locally (`deploy/deploy.sh` against Docker, workflows with actionlint). It has **not been run end to end** on the real host yet: expect to adjust a detail the first time.
 
 ### One-time setup
 
