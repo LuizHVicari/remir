@@ -10,6 +10,7 @@ import dev.luizhenriquevicari.remir.server.support.remirTestApplication
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -184,6 +185,133 @@ class SleepRoutesTest {
     fun `GET sleep with a malformed since answers 400`() =
         remirTestApplication { client ->
             val response = client.get("/sleep?since=yesterday") { bearerAuth(TestJwt.token(newUserId())) }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+        }
+
+    private suspend fun HttpClient.logAndRead(
+        userId: String,
+        request: CreateSleepRecordRequest = night,
+    ): SleepRecordDto = log(userId, request).body()
+
+    private suspend fun HttpClient.replace(
+        userId: String,
+        id: Uuid,
+        request: CreateSleepRecordRequest,
+    ): HttpResponse =
+        put("/sleep/$id") {
+            bearerAuth(TestJwt.token(userId))
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+
+    @Test
+    fun `sleep record by id without token answers 401`() =
+        remirTestApplication { client ->
+            val id = Uuid.random()
+
+            assertEquals(HttpStatusCode.Unauthorized, client.get("/sleep/$id").status)
+            assertEquals(HttpStatusCode.Unauthorized, client.delete("/sleep/$id").status)
+            val put =
+                client.put("/sleep/$id") {
+                    contentType(ContentType.Application.Json)
+                    setBody(night)
+                }
+            assertEquals(HttpStatusCode.Unauthorized, put.status)
+        }
+
+    @Test
+    fun `GET sleep by id returns the night`() =
+        remirTestApplication { client ->
+            val userId = newUserId()
+            val created = client.logAndRead(userId)
+
+            val fetched = client.get("/sleep/${created.id}") { bearerAuth(TestJwt.token(userId)) }
+
+            assertEquals(HttpStatusCode.OK, fetched.status)
+            assertEquals(created, fetched.body<SleepRecordDto>())
+        }
+
+    @Test
+    fun `PUT sleep by id replaces the night and keeps its id and creation time`() =
+        remirTestApplication { client ->
+            val userId = newUserId()
+            val created = client.logAndRead(userId)
+            val later = kotlin.time.Duration.parse("30m")
+            val edited =
+                night.copy(fellAsleepAt = null, wokeUpAt = night.wokeUpAt + later, gotUpAt = night.gotUpAt + later)
+
+            val response = client.replace(userId, created.id, edited)
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            val updated = response.body<SleepRecordDto>()
+            assertEquals(created.id, updated.id)
+            assertEquals(created.createdAt, updated.createdAt)
+            assertNull(updated.fellAsleepAt)
+            assertEquals(edited.wokeUpAt, updated.wokeUpAt)
+            assertEquals(listOf(updated), client.records(userId))
+        }
+
+    @Test
+    fun `PUT sleep by id with out of order times answers 400 with fields and changes nothing`() =
+        remirTestApplication { client ->
+            val userId = newUserId()
+            val created = client.logAndRead(userId)
+
+            val response = client.replace(userId, created.id, night.copy(wokeUpAt = night.bedtime))
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertTrue("wokeUpAt" in response.body<ApiError>().fields)
+            assertEquals(listOf(created), client.records(userId))
+        }
+
+    @Test
+    fun `DELETE sleep by id removes the night`() =
+        remirTestApplication { client ->
+            val userId = newUserId()
+            val kept = client.logAndRead(userId, night.shifted(kotlin.time.Duration.parse("1d")))
+            val removed = client.logAndRead(userId)
+
+            val response = client.delete("/sleep/${removed.id}") { bearerAuth(TestJwt.token(userId)) }
+
+            assertEquals(HttpStatusCode.NoContent, response.status)
+            assertEquals(listOf(kept), client.records(userId))
+        }
+
+    @Test
+    fun `sleep by id answers 404 for a night that does not exist`() =
+        remirTestApplication { client ->
+            val userId = newUserId()
+            val id = Uuid.random()
+            val token = TestJwt.token(userId)
+
+            assertEquals(HttpStatusCode.NotFound, client.get("/sleep/$id") { bearerAuth(token) }.status)
+            assertEquals(HttpStatusCode.NotFound, client.replace(userId, id, night).status)
+            assertEquals(HttpStatusCode.NotFound, client.delete("/sleep/$id") { bearerAuth(token) }.status)
+        }
+
+    @Test
+    fun `user cannot read, change or delete another user's night`() =
+        remirTestApplication { client ->
+            val userA = newUserId()
+            val userB = newUserId()
+            val nightOfA = client.logAndRead(userA)
+            val tokenB = TestJwt.token(userB)
+
+            assertEquals(HttpStatusCode.NotFound, client.get("/sleep/${nightOfA.id}") { bearerAuth(tokenB) }.status)
+            val edit = client.replace(userB, nightOfA.id, night.shifted(kotlin.time.Duration.parse("1d")))
+            assertEquals(HttpStatusCode.NotFound, edit.status)
+            assertEquals(
+                HttpStatusCode.NotFound,
+                client.delete("/sleep/${nightOfA.id}") { bearerAuth(tokenB) }.status,
+            )
+            assertEquals(listOf(nightOfA), client.records(userA))
+        }
+
+    @Test
+    fun `sleep by id with a malformed id answers 400`() =
+        remirTestApplication { client ->
+            val response = client.get("/sleep/not-a-uuid") { bearerAuth(TestJwt.token(newUserId())) }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
         }

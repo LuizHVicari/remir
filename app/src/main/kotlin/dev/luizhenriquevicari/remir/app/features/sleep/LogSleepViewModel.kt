@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
+import kotlin.uuid.Uuid
 
 /** The defaults describe a typical night that just ended, so most nights only need a couple of taps. */
 data class LogSleepState(
@@ -31,13 +32,36 @@ data class LogSleepState(
     val error: UiText? = null,
     val saving: Boolean = false,
     val saved: Boolean = false,
+    /** True while an existing night is being edited rather than a new one logged. */
+    val editing: Boolean = false,
+    /** True while the night being edited is fetched, so the form does not show defaults for a moment. */
+    val loading: Boolean = false,
+    /** Why the night being edited could not be fetched; the screen offers to try again. */
+    val loadError: UiText? = null,
 )
 
+/** Logs a new night, or edits the one with [editingId]: same form, same validation. */
 class LogSleepViewModel(
     private val api: SleepApi,
+    private val editingId: Uuid? = null,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(LogSleepState())
+    private val _state = MutableStateFlow(LogSleepState(editing = editingId != null, loading = editingId != null))
     val state: StateFlow<LogSleepState> = _state.asStateFlow()
+
+    init {
+        load()
+    }
+
+    /** Fills the form with the night being edited. Nothing to do when logging a new one. */
+    fun load() {
+        val id = editingId ?: return
+        _state.update { it.copy(loading = true, loadError = null) }
+        viewModelScope.launch {
+            apiCall { api.get(id) }
+                .onSuccess { record -> _state.value = record.toFormState().copy(editing = true) }
+                .onFailure { e -> _state.update { it.copy(loading = false, loadError = e.userMessage) } }
+        }
+    }
 
     fun onBedDateChange(date: LocalDate) = edit { it.copy(bedDate = date) }
 
@@ -67,7 +91,7 @@ class LogSleepViewModel(
         }
         _state.update { it.copy(saving = true, fieldErrors = emptyMap(), error = null) }
         viewModelScope.launch {
-            apiCall { api.create(request) }
+            apiCall { if (editingId == null) api.create(request) else api.update(editingId, request) }
                 .onSuccess { _state.update { it.copy(saving = false, saved = true) } }
                 .onFailure { e ->
                     val fields = e.fieldErrors

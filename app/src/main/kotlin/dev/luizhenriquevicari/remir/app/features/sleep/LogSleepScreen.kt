@@ -21,24 +21,33 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.luizhenriquevicari.remir.app.R
+import dev.luizhenriquevicari.remir.app.common.UiText
 import dev.luizhenriquevicari.remir.app.common.asString
 import dev.luizhenriquevicari.remir.app.common.toLocalizedDate
 import dev.luizhenriquevicari.remir.app.common.toLocalizedTime
 import dev.luizhenriquevicari.remir.app.designsystem.RemirPreview
+import dev.luizhenriquevicari.remir.app.designsystem.components.ErrorState
+import dev.luizhenriquevicari.remir.app.designsystem.components.Loading
 import dev.luizhenriquevicari.remir.app.designsystem.components.PickerField
 import dev.luizhenriquevicari.remir.app.designsystem.components.PrimaryButton
 import dev.luizhenriquevicari.remir.app.designsystem.components.RemirDatePickerDialog
 import dev.luizhenriquevicari.remir.app.designsystem.components.RemirTimePickerDialog
 import dev.luizhenriquevicari.remir.app.designsystem.components.RemirTopBar
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 import java.time.LocalDate
 import java.time.LocalTime
+import kotlin.uuid.Uuid
 
-/** Wires the ViewModel to the screen. Leaves the screen once the night is saved. */
+/**
+ * Wires the ViewModel to the screen. Logs a new night, or edits the one with [editingId]. Leaves the screen once
+ * the night is saved.
+ */
 @Composable
 fun LogSleepRoute(
     onBack: () -> Unit,
-    viewModel: LogSleepViewModel = koinViewModel(),
+    editingId: Uuid? = null,
+    viewModel: LogSleepViewModel = koinViewModel(parameters = { parametersOf(editingId) }),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.saved) { if (state.saved) onBack() }
@@ -51,6 +60,7 @@ fun LogSleepRoute(
         onWokeUpTimeChange = viewModel::onWokeUpTimeChange,
         onGotUpTimeChange = viewModel::onGotUpTimeChange,
         onSave = viewModel::save,
+        onRetryLoad = viewModel::load,
     )
 }
 
@@ -68,49 +78,22 @@ fun LogSleepScreen(
     onWokeUpTimeChange: (LocalTime) -> Unit,
     onGotUpTimeChange: (LocalTime) -> Unit,
     onSave: () -> Unit,
+    onRetryLoad: () -> Unit,
 ) {
     var picker by rememberSaveable { mutableStateOf<Picker?>(null) }
-    Scaffold(topBar = { RemirTopBar(stringResource(R.string.sleep_log_title), onBack = onBack) }) { padding ->
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            PickerField(
-                value = state.bedDate.toLocalizedDate(),
-                label = stringResource(R.string.sleep_went_to_bed_date),
-                onClick = { picker = Picker.BedDate },
-            )
-            PickerField(
-                value = state.bedTime.toLocalizedTime(),
-                label = stringResource(R.string.sleep_went_to_bed),
-                onClick = { picker = Picker.BedTime },
-            )
-            PickerField(
-                value = state.fellAsleepTime?.toLocalizedTime() ?: stringResource(R.string.sleep_not_set),
-                label = stringResource(R.string.sleep_fell_asleep),
-                onClick = { picker = Picker.FellAsleep },
-                error = state.fieldErrors["fellAsleepAt"],
-                onClear = state.fellAsleepTime?.let { { onFellAsleepTimeChange(null) } },
-            )
-            PickerField(
-                value = state.wokeUpTime.toLocalizedTime(),
-                label = stringResource(R.string.sleep_woke_up),
-                onClick = { picker = Picker.WokeUp },
-                error = state.fieldErrors["wokeUpAt"],
-            )
-            PickerField(
-                value = state.gotUpTime.toLocalizedTime(),
-                label = stringResource(R.string.sleep_got_up),
-                onClick = { picker = Picker.GotUp },
-                error = state.fieldErrors["gotUpAt"],
-            )
-            state.error?.let { Text(it.asString(), color = MaterialTheme.colorScheme.error) }
-            PrimaryButton(stringResource(R.string.sleep_save), onClick = onSave, loading = state.saving)
+    val title = if (state.editing) R.string.sleep_edit_title else R.string.sleep_log_title
+    Scaffold(topBar = { RemirTopBar(stringResource(title), onBack = onBack) }) { padding ->
+        when {
+            state.loading -> Loading(Modifier.padding(padding))
+            state.loadError != null -> ErrorState(state.loadError.asString(), Modifier.padding(padding), onRetryLoad)
+            else ->
+                SleepForm(
+                    state = state,
+                    onOpenPicker = { picker = it },
+                    onClearFellAsleep = { onFellAsleepTimeChange(null) },
+                    onSave = onSave,
+                    modifier = Modifier.padding(padding),
+                )
         }
     }
     PickerDialog(
@@ -123,6 +106,57 @@ fun LogSleepScreen(
         onWokeUpTimeChange = onWokeUpTimeChange,
         onGotUpTimeChange = onGotUpTimeChange,
     )
+}
+
+/** The fields. Tapping one asks the screen to open its picker. */
+@Composable
+private fun SleepForm(
+    state: LogSleepState,
+    onOpenPicker: (Picker) -> Unit,
+    onClearFellAsleep: () -> Unit,
+    onSave: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        PickerField(
+            value = state.bedDate.toLocalizedDate(),
+            label = stringResource(R.string.sleep_went_to_bed_date),
+            onClick = { onOpenPicker(Picker.BedDate) },
+        )
+        PickerField(
+            value = state.bedTime.toLocalizedTime(),
+            label = stringResource(R.string.sleep_went_to_bed),
+            onClick = { onOpenPicker(Picker.BedTime) },
+        )
+        PickerField(
+            value = state.fellAsleepTime?.toLocalizedTime() ?: stringResource(R.string.sleep_not_set),
+            label = stringResource(R.string.sleep_fell_asleep),
+            onClick = { onOpenPicker(Picker.FellAsleep) },
+            error = state.fieldErrors["fellAsleepAt"],
+            onClear = state.fellAsleepTime?.let { onClearFellAsleep },
+        )
+        PickerField(
+            value = state.wokeUpTime.toLocalizedTime(),
+            label = stringResource(R.string.sleep_woke_up),
+            onClick = { onOpenPicker(Picker.WokeUp) },
+            error = state.fieldErrors["wokeUpAt"],
+        )
+        PickerField(
+            value = state.gotUpTime.toLocalizedTime(),
+            label = stringResource(R.string.sleep_got_up),
+            onClick = { onOpenPicker(Picker.GotUp) },
+            error = state.fieldErrors["gotUpAt"],
+        )
+        state.error?.let { Text(it.asString(), color = MaterialTheme.colorScheme.error) }
+        PrimaryButton(stringResource(R.string.sleep_save), onClick = onSave, loading = state.saving)
+    }
 }
 
 @Composable
@@ -192,12 +226,11 @@ private const val DEFAULT_SLEEP_LATENCY_MINUTES = 15L
 
 private val sampleDate = LocalDate.parse("2026-03-10")
 
-@PreviewLightDark
 @Composable
-private fun LogSleepScreenPreview() {
+private fun PreviewLogSleepScreen(state: LogSleepState) {
     RemirPreview {
         LogSleepScreen(
-            state = LogSleepState(bedDate = sampleDate, fellAsleepTime = LocalTime.parse("23:30")),
+            state = state,
             onBack = {},
             onBedDateChange = {},
             onBedTimeChange = {},
@@ -205,27 +238,35 @@ private fun LogSleepScreenPreview() {
             onWokeUpTimeChange = {},
             onGotUpTimeChange = {},
             onSave = {},
+            onRetryLoad = {},
         )
     }
 }
 
 @PreviewLightDark
 @Composable
+private fun LogSleepScreenPreview() {
+    PreviewLogSleepScreen(LogSleepState(bedDate = sampleDate, fellAsleepTime = LocalTime.parse("23:30")))
+}
+
+@PreviewLightDark
+@Composable
+private fun LogSleepScreenEditPreview() {
+    PreviewLogSleepScreen(
+        LogSleepState(bedDate = sampleDate, fellAsleepTime = LocalTime.parse("23:30"), editing = true),
+    )
+}
+
+@PreviewLightDark
+@Composable
 private fun LogSleepScreenErrorPreview() {
-    RemirPreview {
-        LogSleepScreen(
-            state =
-                LogSleepState(
-                    bedDate = sampleDate,
-                    fieldErrors = mapOf("gotUpAt" to "must not be before waking up"),
-                ),
-            onBack = {},
-            onBedDateChange = {},
-            onBedTimeChange = {},
-            onFellAsleepTimeChange = {},
-            onWokeUpTimeChange = {},
-            onGotUpTimeChange = {},
-            onSave = {},
-        )
-    }
+    PreviewLogSleepScreen(
+        LogSleepState(bedDate = sampleDate, fieldErrors = mapOf("gotUpAt" to "must not be before waking up")),
+    )
+}
+
+@PreviewLightDark
+@Composable
+private fun LogSleepScreenLoadErrorPreview() {
+    PreviewLogSleepScreen(LogSleepState(editing = true, loadError = UiText.Dynamic("Could not reach the server")))
 }

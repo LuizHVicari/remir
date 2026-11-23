@@ -8,6 +8,8 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 
 /**
@@ -31,6 +33,22 @@ fun buildSleepRequest(
         fellAsleepAt = fellAsleep?.toInstant()?.toKotlinInstant(),
         wokeUpAt = wokeUp.toInstant().toKotlinInstant(),
         gotUpAt = gotUp.toInstant().toKotlinInstant(),
+    )
+}
+
+/** The record as the request that would log it again (what undoing a delete sends). */
+fun SleepRecordDto.toRequest() =
+    CreateSleepRecordRequest(bedtime = bedtime, fellAsleepAt = fellAsleepAt, wokeUpAt = wokeUpAt, gotUpAt = gotUpAt)
+
+/** The inverse of [buildSleepRequest]: the form fields that would build this record, in the device's zone. */
+fun SleepRecordDto.toFormState(zone: ZoneId = ZoneId.systemDefault()): LogSleepState {
+    fun Instant.local() = toJavaInstant().atZone(zone)
+    return LogSleepState(
+        bedDate = bedtime.local().toLocalDate(),
+        bedTime = bedtime.local().toLocalTime(),
+        fellAsleepTime = fellAsleepAt?.local()?.toLocalTime(),
+        wokeUpTime = wokeUpAt.local().toLocalTime(),
+        gotUpTime = gotUpAt.local().toLocalTime(),
     )
 }
 

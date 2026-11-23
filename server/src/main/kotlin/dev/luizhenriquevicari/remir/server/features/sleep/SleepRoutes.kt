@@ -4,12 +4,14 @@ import dev.luizhenriquevicari.remir.core.sleep.CreateSleepRecordRequest
 import dev.luizhenriquevicari.remir.core.sleep.SaveSleepGoalRequest
 import dev.luizhenriquevicari.remir.core.sleep.SleepGoalResource
 import dev.luizhenriquevicari.remir.core.sleep.SleepGoalValidation
+import dev.luizhenriquevicari.remir.core.sleep.SleepRecordResource
 import dev.luizhenriquevicari.remir.core.sleep.SleepResource
 import dev.luizhenriquevicari.remir.core.sleep.SleepValidation
 import dev.luizhenriquevicari.remir.server.common.orThrow
 import dev.luizhenriquevicari.remir.server.common.userId
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
+import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
@@ -25,6 +27,20 @@ fun Route.sleepRoutes(service: SleepService) {
     post<SleepResource> {
         val request = SleepValidation.create.orThrow(call.receive<CreateSleepRecordRequest>())
         call.respond(HttpStatusCode.Created, service.create(call.userId(), request))
+    }
+
+    get<SleepRecordResource> { resource ->
+        call.respond(service.get(call.userId(), resource.id))
+    }
+
+    put<SleepRecordResource> { resource ->
+        val request = SleepValidation.create.orThrow(call.receive<CreateSleepRecordRequest>())
+        call.respond(service.update(call.userId(), resource.id, request))
+    }
+
+    delete<SleepRecordResource> { resource ->
+        service.delete(call.userId(), resource.id)
+        call.respond(HttpStatusCode.NoContent)
     }
 
     get<SleepGoalResource> {

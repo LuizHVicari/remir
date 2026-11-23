@@ -25,6 +25,7 @@ import dev.luizhenriquevicari.remir.app.designsystem.components.ErrorState
 import dev.luizhenriquevicari.remir.app.designsystem.components.Loading
 import dev.luizhenriquevicari.remir.app.navigation.TabScaffold
 import dev.luizhenriquevicari.remir.core.sleep.SleepGoalDto
+import dev.luizhenriquevicari.remir.core.sleep.SleepRecordDto
 import kotlinx.datetime.LocalTime
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Duration
@@ -37,6 +38,7 @@ fun SleepRoute(
     onLogSleep: () -> Unit,
     onEditGoal: () -> Unit,
     onSeeAll: () -> Unit,
+    onEditNight: (SleepRecordDto) -> Unit,
     viewModel: SleepViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -51,6 +53,7 @@ fun SleepRoute(
         onLogSleep = onLogSleep,
         onEditGoal = onEditGoal,
         onSeeAll = onSeeAll,
+        onEditNight = onEditNight,
         onPeriodChange = viewModel::onPeriodChange,
         onRetry = viewModel::retry,
     )
@@ -64,6 +67,7 @@ fun SleepScreen(
     onLogSleep: () -> Unit,
     onEditGoal: () -> Unit,
     onSeeAll: () -> Unit,
+    onEditNight: (SleepRecordDto) -> Unit,
     onPeriodChange: (SummaryPeriod) -> Unit,
     onRetry: () -> Unit,
 ) {
@@ -82,7 +86,7 @@ fun SleepScreen(
         when {
             state.loading -> Loading(modifier)
             state.error != null && state.records.isEmpty() -> ErrorState(state.error.asString(), modifier, onRetry)
-            else -> SleepList(state, onEditGoal, onSeeAll, onPeriodChange, modifier)
+            else -> SleepList(state, onEditGoal, onSeeAll, onEditNight, onPeriodChange, modifier)
         }
     }
 }
@@ -92,6 +96,7 @@ private fun SleepList(
     state: SleepState,
     onEditGoal: () -> Unit,
     onSeeAll: () -> Unit,
+    onEditNight: (SleepRecordDto) -> Unit,
     onPeriodChange: (SummaryPeriod) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -110,7 +115,7 @@ private fun SleepList(
                 onPeriodChange = onPeriodChange,
             )
         }
-        item { RecentNightsCard(records = state.records, onSeeAll = onSeeAll) }
+        item { RecentNightsCard(records = state.records, onSeeAll = onSeeAll, onEdit = onEditNight) }
     }
 }
 
@@ -133,6 +138,7 @@ private fun SleepScreenPreview() {
             onLogSleep = {},
             onEditGoal = {},
             onSeeAll = {},
+            onEditNight = {},
             onPeriodChange = {},
             onRetry = {},
         )
@@ -149,6 +155,7 @@ private fun SleepScreenEmptyPreview() {
             onLogSleep = {},
             onEditGoal = {},
             onSeeAll = {},
+            onEditNight = {},
             onPeriodChange = {},
             onRetry = {},
         )
@@ -165,6 +172,7 @@ private fun SleepScreenLoadingPreview() {
             onLogSleep = {},
             onEditGoal = {},
             onSeeAll = {},
+            onEditNight = {},
             onPeriodChange = {},
             onRetry = {},
         )

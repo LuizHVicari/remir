@@ -19,6 +19,12 @@ sealed interface Destination {
     @Serializable
     data object LogSleep : Destination
 
+    /** [id] is the night's UUID as text, since a route argument has to be a plain serializable type. */
+    @Serializable
+    data class EditSleep(
+        val id: String,
+    ) : Destination
+
     @Serializable
     data object SleepHistory : Destination
 

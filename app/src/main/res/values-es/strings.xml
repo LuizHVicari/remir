@@ -45,6 +45,10 @@
     <string name="sleep_recent_title">Últimas noches</string>
     <string name="sleep_see_all">Ver todo</string>
     <string name="sleep_history_title">Todas las noches</string>
+    <string name="sleep_edit_title">Editar noche</string>
+    <string name="sleep_deleted">Noche eliminada</string>
+    <string name="sleep_delete">Eliminar noche</string>
+    <string name="sleep_undo">Deshacer</string>
     <string name="sleep_duration">%1$dh %2$02dmin</string>
 
     <string name="sleep_summary_title">Resumen</string>

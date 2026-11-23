@@ -21,13 +21,14 @@ import dev.luizhenriquevicari.remir.app.designsystem.RemirPreview
 import dev.luizhenriquevicari.remir.core.sleep.SleepRecordDto
 
 /**
- * The last few nights, as simple rows in one card, with "See all" to open the full history. With no nights yet it
- * says how to log the first one.
+ * The last few nights, as simple rows in one card, with "See all" to open the full history. Tapping a night
+ * opens it for editing. With no nights yet it says how to log the first one.
  */
 @Composable
 fun RecentNightsCard(
     records: List<SleepRecordDto>,
     onSeeAll: () -> Unit,
+    onEdit: (SleepRecordDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(modifier.fillMaxWidth()) {
@@ -44,7 +45,7 @@ fun RecentNightsCard(
                     ) { Text(stringResource(R.string.sleep_see_all)) }
                 }
             }
-            if (records.isEmpty()) EmptyNights() else NightRows(records)
+            if (records.isEmpty()) EmptyNights() else NightRows(records, onEdit)
         }
     }
 }
@@ -59,10 +60,13 @@ private fun EmptyNights() {
 }
 
 @Composable
-private fun NightRows(records: List<SleepRecordDto>) {
+private fun NightRows(
+    records: List<SleepRecordDto>,
+    onEdit: (SleepRecordDto) -> Unit,
+) {
     Column(Modifier.padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
         records.forEachIndexed { index, record ->
-            SleepNightRow(record)
+            SleepNightRow(record, onClick = { onEdit(record) })
             if (index < records.lastIndex) HorizontalDivider()
         }
     }
@@ -71,11 +75,11 @@ private fun NightRows(records: List<SleepRecordDto>) {
 @PreviewLightDark
 @Composable
 private fun RecentNightsCardPreview() {
-    RemirPreview { RecentNightsCard(sampleNights, onSeeAll = {}, modifier = Modifier.padding(16.dp)) }
+    RemirPreview { RecentNightsCard(sampleNights, onSeeAll = {}, onEdit = {}, modifier = Modifier.padding(16.dp)) }
 }
 
 @PreviewLightDark
 @Composable
 private fun RecentNightsCardEmptyPreview() {
-    RemirPreview { RecentNightsCard(emptyList(), onSeeAll = {}, modifier = Modifier.padding(16.dp)) }
+    RemirPreview { RecentNightsCard(emptyList(), onSeeAll = {}, onEdit = {}, modifier = Modifier.padding(16.dp)) }
 }

@@ -47,6 +47,10 @@
     <string name="sleep_recent_title">Recent nights</string>
     <string name="sleep_see_all">See all</string>
     <string name="sleep_history_title">All nights</string>
+    <string name="sleep_edit_title">Edit night</string>
+    <string name="sleep_deleted">Night deleted</string>
+    <string name="sleep_delete">Delete night</string>
+    <string name="sleep_undo">Undo</string>
     <string name="sleep_duration">%1$dh %2$02dmin</string>
 
     <string name="sleep_summary_title">Summary</string>

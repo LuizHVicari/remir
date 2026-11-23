@@ -5,9 +5,11 @@ import dev.luizhenriquevicari.remir.core.sleep.SaveSleepGoalRequest
 import dev.luizhenriquevicari.remir.core.sleep.SleepGoalDto
 import dev.luizhenriquevicari.remir.core.sleep.SleepGoalResource
 import dev.luizhenriquevicari.remir.core.sleep.SleepRecordDto
+import dev.luizhenriquevicari.remir.core.sleep.SleepRecordResource
 import dev.luizhenriquevicari.remir.core.sleep.SleepResource
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.resources.delete
 import io.ktor.client.plugins.resources.get
 import io.ktor.client.plugins.resources.post
 import io.ktor.client.plugins.resources.put
@@ -15,6 +17,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlin.time.Instant
+import kotlin.uuid.Uuid
 
 /** HTTP calls of the feature, built on the `core` Resources. Errors surface as `ApiException`. */
 class SleepApi(
@@ -46,4 +49,22 @@ class SleepApi(
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }.body()
+
+    /** Fails with a 404 `ApiException` when the night does not exist (any more). */
+    suspend fun get(id: Uuid): SleepRecordDto = client.get(SleepRecordResource(id)).body()
+
+    /** Replaces the night as a whole. */
+    suspend fun update(
+        id: Uuid,
+        request: CreateSleepRecordRequest,
+    ): SleepRecordDto =
+        client
+            .put(SleepRecordResource(id)) {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }.body()
+
+    suspend fun delete(id: Uuid) {
+        client.delete(SleepRecordResource(id))
+    }
 }

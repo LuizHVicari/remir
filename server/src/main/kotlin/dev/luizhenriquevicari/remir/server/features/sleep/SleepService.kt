@@ -9,6 +9,7 @@ import dev.luizhenriquevicari.remir.server.db.dbQuery
 import dev.luizhenriquevicari.remir.server.features.profile.ProfileRepository
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlin.uuid.Uuid
 
 /** Business rules + transaction boundary for sleep records. Requests arrive already validated by the route. */
 class SleepService(
@@ -56,7 +57,24 @@ class SleepService(
             repository.insert(userId, request, now)
         }
 
+    suspend fun get(
+        userId: String,
+        id: Uuid,
+    ): SleepRecordDto = dbQuery { repository.find(userId, id) ?: throw NotFound(NIGHT_NOT_FOUND) }
+
+    suspend fun update(
+        userId: String,
+        id: Uuid,
+        request: CreateSleepRecordRequest,
+    ): SleepRecordDto = dbQuery { repository.update(userId, id, request) ?: throw NotFound(NIGHT_NOT_FOUND) }
+
+    suspend fun delete(
+        userId: String,
+        id: Uuid,
+    ) = dbQuery { if (!repository.delete(userId, id)) throw NotFound(NIGHT_NOT_FOUND) }
+
     private companion object {
+        const val NIGHT_NOT_FOUND = "Sleep record not found"
         const val DEFAULT_LIMIT = 100
         const val MAX_LIMIT = 400
     }

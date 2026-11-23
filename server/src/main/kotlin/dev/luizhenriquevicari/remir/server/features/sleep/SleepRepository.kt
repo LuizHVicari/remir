@@ -6,11 +6,14 @@ import dev.luizhenriquevicari.remir.core.sleep.SleepGoalDto
 import dev.luizhenriquevicari.remir.core.sleep.SleepRecordDto
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greaterEq
 import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.update
 import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -59,6 +62,39 @@ class SleepRepository {
             .single()
             .toDto()
     }
+
+    fun find(
+        userId: String,
+        id: Uuid,
+    ): SleepRecordDto? =
+        SleepRecordsTable
+            .selectAll()
+            .where { (SleepRecordsTable.id eq id) and (SleepRecordsTable.userId eq userId) }
+            .singleOrNull()
+            ?.toDto()
+
+    /** Replaces the four moments of the night; null when the user has no such night. `createdAt` is kept. */
+    fun update(
+        userId: String,
+        id: Uuid,
+        request: CreateSleepRecordRequest,
+    ): SleepRecordDto? {
+        val updated =
+            SleepRecordsTable.update({ (SleepRecordsTable.id eq id) and (SleepRecordsTable.userId eq userId) }) {
+                it[bedtime] = request.bedtime
+                it[fellAsleepAt] = request.fellAsleepAt
+                it[wokeUpAt] = request.wokeUpAt
+                it[gotUpAt] = request.gotUpAt
+            }
+        return if (updated == 0) null else find(userId, id)
+    }
+
+    /** True when a night was removed, false when the user has no such night. */
+    fun delete(
+        userId: String,
+        id: Uuid,
+    ): Boolean =
+        SleepRecordsTable.deleteWhere { (SleepRecordsTable.id eq id) and (SleepRecordsTable.userId eq userId) } > 0
 
     fun findGoal(userId: String): SleepGoalDto? =
         SleepGoalsTable

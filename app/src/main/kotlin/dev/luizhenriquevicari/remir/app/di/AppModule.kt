@@ -14,6 +14,7 @@ import dev.luizhenriquevicari.remir.app.features.sleep.SleepHistoryViewModel
 import dev.luizhenriquevicari.remir.app.features.sleep.SleepViewModel
 import dev.luizhenriquevicari.remir.app.network.createHttpClient
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
@@ -30,7 +31,8 @@ val appModule =
         singleOf(::SleepApi)
         viewModelOf(::SleepViewModel)
         viewModelOf(::SleepHistoryViewModel)
-        viewModelOf(::LogSleepViewModel)
+        // Logs a new night, or edits the one whose id is passed as the parameter.
+        viewModel { params -> LogSleepViewModel(get(), params.getOrNull()) }
         viewModelOf(::EditSleepGoalViewModel)
 
         // legal
