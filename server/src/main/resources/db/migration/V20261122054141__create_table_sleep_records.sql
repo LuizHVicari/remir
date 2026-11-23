@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS sleep_records (id uuid PRIMARY KEY, user_id VARCHAR(64) NOT NULL, bedtime TIMESTAMP NOT NULL, fell_asleep_at TIMESTAMP NULL, woke_up_at TIMESTAMP NOT NULL, got_up_at TIMESTAMP NOT NULL, created_at TIMESTAMP NOT NULL, CONSTRAINT fk_sleep_records_user_id__id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT);
+CREATE INDEX sleep_records_user_id ON sleep_records (user_id);

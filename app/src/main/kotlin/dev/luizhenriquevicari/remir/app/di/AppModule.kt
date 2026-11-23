@@ -7,8 +7,14 @@ import dev.luizhenriquevicari.remir.app.features.legal.LegalApi
 import dev.luizhenriquevicari.remir.app.features.legal.LegalGateViewModel
 import dev.luizhenriquevicari.remir.app.features.profile.ProfileApi
 import dev.luizhenriquevicari.remir.app.features.profile.ProfileViewModel
+import dev.luizhenriquevicari.remir.app.features.sleep.EditSleepGoalViewModel
+import dev.luizhenriquevicari.remir.app.features.sleep.LogSleepViewModel
+import dev.luizhenriquevicari.remir.app.features.sleep.SleepApi
+import dev.luizhenriquevicari.remir.app.features.sleep.SleepHistoryViewModel
+import dev.luizhenriquevicari.remir.app.features.sleep.SleepViewModel
 import dev.luizhenriquevicari.remir.app.network.createHttpClient
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
@@ -20,6 +26,13 @@ val appModule =
         // profile
         singleOf(::ProfileApi)
         viewModelOf(::ProfileViewModel)
+
+        // sleep
+        singleOf(::SleepApi)
+        viewModelOf(::SleepViewModel)
+        viewModelOf(::SleepHistoryViewModel)
+        viewModel { params -> LogSleepViewModel(get(), params.getOrNull()) }
+        viewModelOf(::EditSleepGoalViewModel)
 
         // legal
         singleOf(::LegalApi)

@@ -4,6 +4,9 @@
     <string name="clerk_init_failed">Não foi possível iniciar o Clerk: %1$s</string>
     <string name="retry">Tentar novamente</string>
     <string name="back">Voltar</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancelar</string>
+    <string name="clear">Limpar</string>
     <string name="error_network">Não foi possível conectar ao servidor</string>
     <string name="error_unexpected">Erro inesperado</string>
 
@@ -27,6 +30,59 @@
     <string name="legal_admin_not_published">Ainda não publicado</string>
     <string name="legal_admin_current_version">Versão atual: %1$d</string>
     <string name="legal_admin_published">Versão %1$d publicada</string>
+
+    <string name="sleep_log">Registrar sono</string>
+    <string name="sleep_log_title">Registrar sono</string>
+    <string name="sleep_empty">Nenhuma noite registrada ainda. Toque em "Registrar sono" para adicionar a primeira.</string>
+    <string name="sleep_went_to_bed_date">Foi dormir em (data)</string>
+    <string name="sleep_went_to_bed">Foi dormir</string>
+    <string name="sleep_fell_asleep">Pegou no sono (opcional)</string>
+    <string name="sleep_not_set">Não informado</string>
+    <string name="sleep_woke_up">Acordou</string>
+    <string name="sleep_got_up">Levantou</string>
+    <string name="sleep_feeling_title">Como você se sentiu ao acordar? (opcional)</string>
+    <string name="sleep_feeling_exhausted">Exausto</string>
+    <string name="sleep_feeling_tired">Cansado</string>
+    <string name="sleep_feeling_ok">Normal</string>
+    <string name="sleep_feeling_rested">Descansado</string>
+    <string name="sleep_feeling_energized">Disposto</string>
+    <string name="sleep_save">Salvar</string>
+    <string name="sleep_in_bed">%1$s – %2$s</string>
+    <string name="sleep_recent_title">Últimas noites</string>
+    <string name="sleep_see_all">Ver tudo</string>
+    <string name="sleep_history_title">Todas as noites</string>
+    <string name="sleep_edit_title">Editar noite</string>
+    <string name="sleep_deleted">Noite apagada</string>
+    <string name="sleep_delete">Apagar noite</string>
+    <string name="sleep_undo">Desfazer</string>
+    <string name="sleep_duration">%1$dh %2$02dmin</string>
+
+    <string name="sleep_summary_title">Resumo</string>
+    <string name="sleep_period_week">Semana</string>
+    <string name="sleep_period_month">Mês</string>
+    <string name="sleep_period_three_months">3 meses</string>
+    <string name="sleep_period_year">Ano</string>
+    <string name="sleep_summary_avg_bedtime">Dormir (média)</string>
+    <string name="sleep_summary_avg_wake_up">Acordar (média)</string>
+    <string name="sleep_summary_empty">Nenhuma noite registrada neste período.</string>
+
+    <string name="sleep_goal_cta_title">Defina sua meta de sono</string>
+    <string name="sleep_goal_cta_body">Escolha um horário de dormir, de acordar ou quanto tempo você quer dormir.</string>
+    <string name="sleep_goal_title">Minha meta de sono</string>
+    <string name="sleep_goal_edit">Editar meta de sono</string>
+    <string name="sleep_goal_bedtime">Dormir</string>
+    <string name="sleep_goal_wake_up">Acordar</string>
+    <string name="sleep_goal_sleep">Sono</string>
+    <string name="sleep_goal_edit_title">Meta de sono</string>
+    <string name="sleep_goal_mismatch_title">Esses horários não batem</string>
+    <string name="sleep_goal_mismatch_body">De %1$s a %2$s você fica %3$s na cama, mas a meta pede %4$s de sono. Não dá para dormir mais do que o tempo na cama.</string>
+    <string name="sleep_goal_mismatch_review">Revisar meta</string>
+    <string name="sleep_goal_mismatch_save_anyway">Salvar mesmo assim</string>
+    <string name="sleep_goal_hint">Os três são opcionais, mas defina pelo menos um.</string>
+    <string name="sleep_goal_bedtime_field">Horário de dormir (opcional)</string>
+    <string name="sleep_goal_wake_up_field">Horário de acordar (opcional)</string>
+    <string name="sleep_goal_duration_field">Tempo de sono (opcional)</string>
+    <string name="sleep_goal_duration_dialog">Horas e minutos de sono</string>
 
     <string name="profile_title">Perfil</string>
     <string name="profile_no_name">Ainda sem nome</string>

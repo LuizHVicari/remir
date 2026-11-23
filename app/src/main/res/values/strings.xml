@@ -6,6 +6,9 @@
     <string name="clerk_init_failed">Could not start Clerk: %1$s</string>
     <string name="retry">Try again</string>
     <string name="back">Back</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="clear">Clear</string>
     <string name="error_network">Could not reach the server</string>
     <string name="error_unexpected">Unexpected error</string>
 
@@ -29,6 +32,61 @@
     <string name="legal_admin_not_published">Not published yet</string>
     <string name="legal_admin_current_version">Current version: %1$d</string>
     <string name="legal_admin_published">Published version %1$d</string>
+
+    <string name="sleep_log">Log sleep</string>
+    <string name="sleep_log_title">Log sleep</string>
+    <string name="sleep_empty">No nights logged yet. Tap "Log sleep" to add the first one.</string>
+    <string name="sleep_went_to_bed_date">Went to bed on (date)</string>
+    <string name="sleep_went_to_bed">Went to bed</string>
+    <string name="sleep_fell_asleep">Fell asleep (optional)</string>
+    <string name="sleep_not_set">Not set</string>
+    <string name="sleep_woke_up">Woke up</string>
+    <string name="sleep_got_up">Got out of bed</string>
+    <string name="sleep_feeling_title">How did you feel waking up? (optional)</string>
+    <string name="sleep_feeling_exhausted">Exhausted</string>
+    <string name="sleep_feeling_tired">Tired</string>
+    <string name="sleep_feeling_ok">Okay</string>
+    <string name="sleep_feeling_rested">Rested</string>
+    <string name="sleep_feeling_energized">Energized</string>
+    <string name="sleep_save">Save</string>
+    <string name="sleep_in_bed">%1$s – %2$s</string>
+    <string name="sleep_recent_title">Recent nights</string>
+    <string name="sleep_see_all">See all</string>
+    <string name="sleep_history_title">All nights</string>
+    <string name="sleep_edit_title">Edit night</string>
+    <string name="sleep_deleted">Night deleted</string>
+    <string name="sleep_delete">Delete night</string>
+    <string name="sleep_undo">Undo</string>
+    <string name="sleep_duration">%1$dh %2$02dmin</string>
+
+    <string name="sleep_summary_title">Summary</string>
+    <string name="sleep_period_week">Week</string>
+    <string name="sleep_period_month">Month</string>
+    <string name="sleep_period_three_months">3 months</string>
+    <string name="sleep_period_year">Year</string>
+    <string name="sleep_summary_avg_bedtime">Avg. bedtime</string>
+    <string name="sleep_summary_avg_wake_up">Avg. wake up</string>
+    <string name="sleep_summary_empty">No nights logged in this period.</string>
+
+    <string name="sleep_goal_cta_title">Set your sleep goal</string>
+    <string name="sleep_goal_cta_body">Choose a bedtime, a wake up time or how long you want to sleep.</string>
+    <string name="sleep_goal_title">My sleep goal</string>
+    <string name="sleep_goal_edit">Edit sleep goal</string>
+    <string name="sleep_goal_bedtime">Bedtime</string>
+    <string name="sleep_goal_wake_up">Wake up</string>
+    <string name="sleep_goal_sleep">Sleep</string>
+    <string name="sleep_goal_edit_title">Sleep goal</string>
+    <string name="sleep_goal_unset_time" translatable="false">--:--</string>
+    <string name="sleep_goal_unset_duration" translatable="false">--h --min</string>
+    <string name="sleep_goal_mismatch_title">These times don\'t add up</string>
+    <string name="sleep_goal_mismatch_body">From %1$s to %2$s you are in bed for %3$s, but the goal asks for %4$s of sleep. You can\'t sleep longer than you are in bed.</string>
+    <string name="sleep_goal_mismatch_review">Review goal</string>
+    <string name="sleep_goal_mismatch_save_anyway">Save anyway</string>
+    <string name="sleep_goal_hint">All three are optional, but set at least one.</string>
+    <string name="sleep_goal_bedtime_field">Bedtime (optional)</string>
+    <string name="sleep_goal_wake_up_field">Wake up time (optional)</string>
+    <string name="sleep_goal_duration_field">Time asleep (optional)</string>
+    <string name="sleep_goal_duration_dialog">Hours and minutes of sleep</string>
 
     <string name="profile_title">Profile</string>
     <string name="profile_no_name">No name yet</string>

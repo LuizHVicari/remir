@@ -1,7 +1,7 @@
 package dev.luizhenriquevicari.remir.server.features.legal
 
+import dev.luizhenriquevicari.remir.server.db.timestamptz
 import org.jetbrains.exposed.v1.core.Table
-import org.jetbrains.exposed.v1.datetime.timestamp
 
 /**
  * Immutable versions of the legal documents (privacy policy, terms). Editing a document inserts a new
@@ -16,7 +16,7 @@ object LegalDocumentsTable : Table("legal_documents") {
     /** Markdown. */
     val content = text("content")
     val requiresAcceptance = bool("requires_acceptance")
-    val effectiveAt = timestamp("effective_at")
+    val effectiveAt = timestamptz("effective_at")
 
     /** Clerk `sub` of the admin who published it. */
     val publishedBy = varchar("published_by", 64)

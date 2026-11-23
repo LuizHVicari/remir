@@ -39,7 +39,7 @@ Path abbreviations:
    - `C/<feature>/<Resource>.kt`: `@Resource` routes, same naming rule (`MeResource.kt`); several resources may share `<Feature>Resources.kt`.
    - `C/<feature>/<Feature>Validation.kt`: `object <Feature>Validation { val create = Validation<...> { } }`. Use the shared constraints in `C/validation/Constraints.kt`, and add new shared ones there.
 2. **table**: `S/features/<feature>/XTable.kt` holds `object XTable : Table("snake_case_plural")` (the file is named after the table object). Every user-owned table has `val userId = varchar("user_id", 64).references(UsersTable.id).index()`.
-3. **migration**: run `./gradlew :server:generateMigrations`, which writes `server/src/main/resources/db/migration/V<timestamp>__<description>.sql`. Review the generated SQL, then commit it. Never hand-write the DDL.
+3. **migration**: run `./gradlew :server:generateMigrations`, which writes `server/src/main/resources/db/migration/V<timestamp>__<description>.sql`. Review the generated SQL, then commit it. Never hand-write the DDL. The one exception is a column type change, which the generator does not detect: **ask the developer for permission first**, then write a new migration for it with an explicit `USING` clause and a comment saying why it is hand-written. In the PR, call it out at the top of the description (what it changes, how existing data is converted, what you checked): reviewers skip migrations because they assume they are generated, so this one must not go unreviewed.
 4. **server**
    - `S/features/<feature>/<Feature>Repository.kt`: Exposed DSL only; returns `core` DTOs.
    - `S/features/<feature>/<Feature>Service.kt`: business rules, opens `dbQuery { }`, throws domain exceptions.
@@ -70,6 +70,7 @@ Code examples for every layer: [examples.md](examples.md).
 - Exposed `Table`s are the source of truth.
 - Migrations come from `generateMigrations`. Never use `SchemaUtils.create` at runtime.
 - Never edit a migration once it has been applied; generate a new one instead.
+- Instants are `TIMESTAMPTZ`: declare them with `timestamptz("name")` (`server/db/Timestamps.kt`, still a `kotlin.time.Instant` in code), never with Exposed's `timestamp()`. That one creates a `TIMESTAMP` without a time zone and writes the value in the JVM's zone, so the stored data would depend on where the server runs. `TimestampColumnsTest` enforces it.
 
 **Server layers**
 - **Routes** do HTTP only: `receive`, `Validation.orThrow`, the service call, `respond`. No business `if`s, no DB access.

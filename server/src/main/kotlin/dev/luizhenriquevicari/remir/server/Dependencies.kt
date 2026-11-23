@@ -8,6 +8,8 @@ import dev.luizhenriquevicari.remir.server.features.legal.LegalRepository
 import dev.luizhenriquevicari.remir.server.features.legal.LegalService
 import dev.luizhenriquevicari.remir.server.features.profile.ProfileRepository
 import dev.luizhenriquevicari.remir.server.features.profile.ProfileService
+import dev.luizhenriquevicari.remir.server.features.sleep.SleepRepository
+import dev.luizhenriquevicari.remir.server.features.sleep.SleepService
 import dev.luizhenriquevicari.remir.server.plugins.clerkJwkProvider
 
 /**
@@ -23,6 +25,7 @@ class Dependencies(
 
     val profileService = ProfileService(profileRepository)
     val legalService = LegalService(LegalRepository(), profileRepository)
+    val sleepService = SleepService(SleepRepository(), profileRepository)
 
     override fun close() = dataSource.close()
 
